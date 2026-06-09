@@ -9,7 +9,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const { id } = await params;
     const file = request.nextUrl.searchParams.get("name") || "";
     const text = readRunFile(decodeURIComponent(id), file);
-    const contentType = file.endsWith(".json") ? "application/json; charset=utf-8" : "text/markdown; charset=utf-8";
+    const contentType = file.endsWith(".json")
+      ? "application/json; charset=utf-8"
+      : file.endsWith(".srt") || file.endsWith(".vtt") || file.endsWith(".txt")
+        ? "text/plain; charset=utf-8"
+        : "text/markdown; charset=utf-8";
     return new NextResponse(text, {
       headers: {
         "content-type": contentType,

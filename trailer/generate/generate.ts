@@ -32,6 +32,15 @@ import { resolveMusicBed } from "./audio.js";
 import { mixMusicBed } from "./ffmpeg.js";
 import { uploadBufferToS3 } from "../../src/utils/falMedia.js";
 import type { Screenplay, Sequence, Shot } from "../pipeline/types.js";
+import {
+  beginRunStage,
+  completeRunStage,
+  ensureRunManifest,
+  failRunStage,
+  refreshRunManifestFromScreenplay,
+  registerFalRequest,
+  registerRunArtifact,
+} from "../pipeline/runManifest.js";
 
 /** A trailer-score mood prompt for the music bed (legacy mode only — sequence mode uses native audio). */
 function musicPromptFor(sp: Screenplay): string {
@@ -71,6 +80,14 @@ async function pushToTelegram(buf: Buffer, scratch: string, n: number, label: st
 
 export async function generateTrailer(scenesPath: string, outDir: string, opts: GenerateOpts): Promise<string | null> {
   const screenplay: Screenplay = JSON.parse(fs.readFileSync(scenesPath, "utf8"));
+  ensureRunManifest(outDir, {
+    id: screenplay.blueprintId || path.basename(outDir),
+    title: screenplay.title || screenplay.blueprintId || path.basename(outDir),
+    logline: screenplay.logline || "",
+    targetSeconds: screenplay.totalSeconds,
+  });
+  registerRunArtifact(outDir, { kind: "json", label: "Production scenes JSON", path: "scenes.json" });
+  refreshRunManifestFromScreenplay(outDir, screenplay);
   if (screenplay.sequences && screenplay.sequences.length > 0) {
     return generateFromSequences(screenplay, outDir, opts);
   }
@@ -124,14 +141,42 @@ async function generateFromSequences(screenplay: Screenplay, outDir: string, opt
 
     let approved = false;
     while (!approved) {
+      const stageId = `video:seq-${seq.n}`;
       const t0 = Date.now();
       process.stdout.write(`   [${seq.n}/${sequences.length}] rendering ${seq.label}${seq.signature ? " ★signature" : ""}… `);
       try {
+        beginRunStage(outDir, {
+          id: stageId,
+          kind: "video",
+          label: `Render sequence ${seq.n}: ${seq.label}`,
+          command: ["npm", "run", "trailer:generate", "--", screenplay.blueprintId || path.basename(outDir), "--only", String(seq.n)],
+          outputFiles: [`sequences/seq_${String(seq.n).padStart(2, "0")}.mp4`],
+        });
         const r = await renderSequence(seq, screenplay.look, outDir, scratch, { regen: opts.regen, promptDumpDir });
         fs.writeFileSync(file, r.buffer);
         clips[i] = r.buffer;
+        registerRunArtifact(outDir, { kind: "image", label: `Sequence ${seq.n} start frame`, path: path.relative(outDir, r.startFramePath) });
+        if (r.endFramePath) registerRunArtifact(outDir, { kind: "image", label: `Sequence ${seq.n} end frame`, path: path.relative(outDir, r.endFramePath) });
+        registerRunArtifact(outDir, { kind: "video", label: `Sequence ${seq.n} clip`, path: path.relative(outDir, file) });
+        for (const request of r.falRequests) {
+          registerFalRequest(outDir, {
+            stageId: request.stageId,
+            model: request.model || "unknown",
+            requestId: request.requestId,
+            outputUrl: request.outputUrl,
+            sequence: request.sequence,
+            durationSecs: request.durationSecs,
+            resolution: request.resolution,
+          });
+        }
+        refreshRunManifestFromScreenplay(outDir, screenplay);
+        completeRunStage(outDir, stageId, {
+          outputFiles: [`sequences/seq_${String(seq.n).padStart(2, "0")}.mp4`],
+          notes: [`Rendered ${r.seconds.toFixed(1)}s normalized clip.`],
+        });
         console.log(`\n      ✓ ${((Date.now() - t0) / 1000).toFixed(1)}s — ${r.seconds.toFixed(1)}s clip → ${path.basename(file)}`);
       } catch (e: any) {
+        failRunStage(outDir, stageId, e);
         console.log(`✗ ${e?.message || e}`);
         if (!opts.approvePerScene) throw e;
       }
@@ -151,6 +196,12 @@ async function generateFromSequences(screenplay: Screenplay, outDir: string, opt
   if (!opts.assemble) { console.log(`\n✅ sequences done → ${seqDir}/ (assembly skipped)\n`); return null; }
 
   console.log(`\n   assembling…`);
+  beginRunStage(outDir, {
+    id: "assemble:final",
+    kind: "assemble",
+    label: "Assemble final trailer",
+    outputFiles: ["final.mp4"],
+  });
   const ordered = clips.filter((b): b is Buffer => !!b && b.length > 0);
   const final = await assembleTrailer(ordered, {
     countdown: screenplay.endCard?.countdown || "",
@@ -161,6 +212,11 @@ async function generateFromSequences(screenplay: Screenplay, outDir: string, opt
   if (!final) { console.log("   assembly produced nothing"); return null; }
   const finalPath = path.join(outDir, "final.mp4");
   fs.writeFileSync(finalPath, final);
+  registerRunArtifact(outDir, { kind: "video", label: "Final assembled trailer", path: "final.mp4" });
+  completeRunStage(outDir, "assemble:final", {
+    outputFiles: ["final.mp4"],
+    notes: [`Assembled ${ordered.length} sequence clips.`],
+  });
   console.log(`\n✅ FINAL → ${finalPath}  (${ordered.length} sequences)\n`);
   return finalPath;
 }

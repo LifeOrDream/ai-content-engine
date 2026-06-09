@@ -25,7 +25,7 @@ export function JobPanel({
           <span>{jobs.filter((job) => job.status === "running").length} running</span>
         </div>
         <div className={styles.list}>
-          {jobs.length === 0 ? <p className={styles.empty}>No jobs in this WebUI session yet.</p> : null}
+          {jobs.length === 0 ? <p className={styles.empty}>No persisted jobs yet.</p> : null}
           {jobs.map((job) => (
             <button
               key={job.id}
@@ -33,7 +33,7 @@ export function JobPanel({
               onClick={() => onSelect(job.id)}
             >
               <div className={styles.titleRow}>
-                <strong>{job.blueprintId}</strong>
+                <strong>{job.blueprintId} · {job.jobType}</strong>
                 <span className={`${styles.status} ${styles[job.status]}`}>{job.status}</span>
               </div>
               <p>{job.command.join(" ")}</p>
