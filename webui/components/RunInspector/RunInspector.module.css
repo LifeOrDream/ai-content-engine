@@ -1,0 +1,255 @@
+.panel {
+  min-width: 0;
+  min-height: 760px;
+  padding: 22px;
+  border: 1px solid rgba(20, 217, 230, 0.18);
+  border-radius: 26px;
+  background:
+    radial-gradient(circle at 82% 0%, rgba(20, 217, 230, 0.1), transparent 34%),
+    linear-gradient(180deg, rgba(16, 28, 40, 0.94), rgba(6, 16, 22, 0.96));
+  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.34);
+}
+
+.empty {
+  display: grid;
+  min-height: 520px;
+  place-items: center;
+  color: var(--mb-console-muted);
+  text-align: center;
+}
+
+.topbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.overline {
+  margin: 0 0 8px;
+  color: var(--mb-gold);
+  font-family: var(--font-pixel);
+  font-size: 0.52rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.topbar h1 {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: clamp(1.55rem, 3.2vw, 2.7rem);
+  line-height: 1.02;
+}
+
+.status {
+  flex: 0 0 auto;
+  border: 1px solid rgba(148, 174, 192, 0.2);
+  border-radius: 999px;
+  padding: 7px 10px;
+  color: var(--mb-console-muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.ready,
+.success,
+.ok {
+  color: var(--mb-solana-green);
+}
+
+.running {
+  color: var(--mb-signal-cyan);
+}
+
+.failed,
+.killed,
+.warn {
+  color: #ffb169;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 22px 0;
+}
+
+.metric {
+  min-height: 92px;
+  border: 1px solid rgba(148, 174, 192, 0.16);
+  border-radius: 18px;
+  background: rgba(3, 7, 13, 0.55);
+  padding: 16px;
+}
+
+.metric strong {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--mb-console-muted);
+  font-family: var(--font-pixel);
+  font-size: 0.48rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.metric span {
+  font-family: var(--font-mono);
+  font-size: 1.75rem;
+  font-weight: 950;
+}
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.tab {
+  min-height: 36px;
+  border: 1px solid rgba(148, 174, 192, 0.2);
+  border-radius: 999px;
+  background: rgba(3, 7, 13, 0.48);
+  color: var(--mb-console-muted);
+  padding: 0 12px;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.activeTab {
+  border-color: rgba(247, 147, 26, 0.72);
+  color: var(--mb-gold);
+}
+
+.viewer {
+  min-height: 500px;
+  max-height: 72vh;
+  overflow: auto;
+  border: 1px solid rgba(148, 174, 192, 0.16);
+  border-radius: 20px;
+  background: rgba(3, 7, 13, 0.76);
+  padding: 16px;
+}
+
+.markdown,
+.jsonBlock {
+  margin: 0;
+  color: #dff8ff;
+  font-size: 0.76rem;
+  line-height: 1.62;
+  white-space: pre-wrap;
+}
+
+.jsonBlock {
+  color: #c8fff0;
+}
+
+.note {
+  margin: 0 0 14px;
+  color: var(--mb-console-muted);
+  font-size: 0.84rem;
+  line-height: 1.55;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.table th,
+.table td {
+  border-bottom: 1px solid rgba(148, 174, 192, 0.14);
+  padding: 11px 8px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.table th {
+  color: var(--mb-gold);
+  font-family: var(--font-pixel);
+  font-size: 0.46rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.table small {
+  display: block;
+  margin-top: 5px;
+  color: var(--mb-console-muted);
+}
+
+.flag {
+  display: inline-block;
+  margin: 0 5px 5px 0;
+  border: 1px solid rgba(255, 77, 94, 0.35);
+  border-radius: 999px;
+  padding: 3px 7px;
+  color: #ffb6bd;
+  font-size: 0.68rem;
+}
+
+.frameList {
+  display: grid;
+  gap: 10px;
+}
+
+.frameRow {
+  border: 1px solid rgba(148, 174, 192, 0.16);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 12px;
+}
+
+.frameRow p {
+  margin: 7px 0 0;
+  color: var(--mb-console-muted);
+  font-size: 0.8rem;
+}
+
+.refs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 9px;
+}
+
+.refs code {
+  border-radius: 999px;
+  background: rgba(20, 217, 230, 0.1);
+  padding: 4px 7px;
+  color: var(--mb-signal-cyan);
+  font-size: 0.7rem;
+}
+
+.videoGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.videoCard {
+  border: 1px solid rgba(148, 174, 192, 0.16);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 12px;
+}
+
+.videoCard video {
+  width: 100%;
+  border-radius: 14px;
+  background: #000;
+}
+
+.videoCard p {
+  margin: 8px 0 0;
+  color: var(--mb-console-muted);
+  font-size: 0.8rem;
+}
+
+@media (max-width: 860px) {
+  .cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

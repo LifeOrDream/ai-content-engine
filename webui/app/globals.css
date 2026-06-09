@@ -1,0 +1,74 @@
+@font-face {
+  font-family: "Press Start 2P";
+  src: url("https://assets.minebtc.fun/frontend/fonts/PressStart2P-Regular.ttf") format("truetype");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Space Mono";
+  src: url("https://assets.minebtc.fun/frontend/fonts/SpaceMono-Regular.ttf") format("truetype");
+  font-display: swap;
+}
+
+:root {
+  --mb-rice: #fff8ed;
+  --mb-parchment: #f5ead5;
+  --mb-cream: #fffdf7;
+  --mb-ink: #2e2521;
+  --mb-ink-muted: #6e625a;
+  --mb-void: #061016;
+  --mb-night: #0a1420;
+  --mb-panel: #101c28;
+  --mb-panel-raised: #162535;
+  --mb-signal-cyan: #14d9e6;
+  --mb-solana-green: #39ff88;
+  --mb-bitcoin: #f7931a;
+  --mb-gold: #ffc857;
+  --mb-danger: #ff4d5e;
+  --mb-console-bg: #061016;
+  --mb-console-border: rgba(20, 217, 230, 0.3);
+  --mb-console-text: #f6fbff;
+  --mb-console-muted: #94aec0;
+  --mb-border-gold: rgba(247, 147, 26, 0.34);
+  --font-pixel: "Press Start 2P", cursive;
+  --font-mono: "Space Mono", monospace;
+  --font-market: "IBM Plex Sans", "Space Grotesk", "Avenir Next", "Helvetica Neue", Arial, sans-serif;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at 16% 0%, rgba(20, 217, 230, 0.16), transparent 30rem),
+    radial-gradient(circle at 90% 8%, rgba(247, 147, 26, 0.15), transparent 28rem),
+    linear-gradient(180deg, #061016 0%, #080b12 48%, #030507 100%);
+  color: var(--mb-console-text);
+  font-family: var(--font-market);
+}
+
+button,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+code,
+pre {
+  font-family: var(--font-mono);
+}
+
+a {
+  color: inherit;
+}

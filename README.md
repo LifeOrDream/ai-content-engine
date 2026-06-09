@@ -129,6 +129,9 @@ npm run typecheck
 # Run a no-key contributor demo
 npm run demo:fixture
 
+# Open the local Next.js generation WebUI
+npm run webui
+
 # Run the Redis/BullMQ content-engine worker used by MineBtcBackend
 npm run service:worker
 
@@ -141,6 +144,24 @@ npm run trailer:generate -- 01
 # Canonize a posted video into story memory
 npm run trailer:canonize -- 01 --platform x --url https://x.com/... --video-no 1
 ```
+
+## Local WebUI
+
+The repo includes a local Next.js dashboard for operating the trailer pipeline:
+
+```bash
+npm run webui
+```
+
+Open [http://127.0.0.1:8787](http://127.0.0.1:8787). The WebUI reads the real repo artifacts and lets you:
+
+- Start `npm run trailer:script` jobs by blueprint, range, or single pass.
+- Track running jobs and logs without digging through terminals.
+- Inspect every pass file in `trailer/out/<id>/`.
+- Review `scenes.json`, generated videos, frame reference health, and dialogue QA.
+- Catch bad dialogue early: tiny slogan lines, prop-label dialogue, mechanic words in mouths, and timing mismatch.
+
+The WebUI is local-first and binds to `127.0.0.1` through its package script. It does not expose secrets; it only reads approved trailer artifacts and whitelisted MineBTC banner assets.
 
 Local service mode needs Redis or Valkey:
 

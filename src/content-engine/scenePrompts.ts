@@ -29,8 +29,11 @@ export function buildSceneScriptPrompt(input: SceneScriptPromptInput): string {
     ? `\nCO-STARS IN FRAME: ${input.costarNames}. Play the multi-way rivalry — the protagonist above is the one who SPEAKS; the co-stars react.`
     : "";
   const pulse = input.pulseBlock ? `\n${input.pulseBlock}\n` : "";
+  const duration = input.videoDurationSecs || 8;
+  const minWords = duration < 5 ? 6 : Math.ceil(Math.max(0, duration - 1.4) * 2.3 * 0.58);
+  const maxWords = Math.ceil(Math.max(4, duration - 0.7) * 2.4);
 
-  return `You write ONE ~8-second scene of an ongoing, serialized country-vs-country NFT mining-war show. The character (a stylized dog-warrior mascot) is on camera and SPEAKS one line. This scene must CONTINUE the episode's story, not stand alone.
+  return `You write ONE ~${duration}-second scene of an ongoing, serialized country-vs-country NFT mining-war show. The character (a stylized dog-warrior mascot) is on camera and SPEAKS one line. This scene must CONTINUE the episode's story, not stand alone.
 
 EPISODE SO FAR: ${input.storySoFar || "(early in the episode)"}
 CURRENT LEADER: ${input.leadingFactionName || "undecided"} | ARC: ${input.arcPhase || "rising"}
@@ -52,10 +55,12 @@ ${buildDirectorPromptBlock({ aspectRatio: "9:16" })}
 
 ${buildDialogueRulesBlock(input.videoDurationSecs)}
 
+Dialogue timing for this scene: target ${minWords}-${maxWords} spoken words unless the scene explicitly uses silence, interruption, or reaction time. Do not write a tiny tagline for a long speaking window. The line must be behavior: a bluff, dare, accusation, recruitment attempt, confession, deflection, joke hiding fear, or rivalry move. It must not sound like a feature label, landing page, crypto tutorial, or prop inventory.
+
 Use the short-form formula: a HOOK in the first beat, quick escalation, a payoff, and a LOOP/cliffhanger feel. Write STRICT JSON (no markdown):
 {
   "scene": "Motion/camera direction ONLY for an image-to-video model — how it MOVES and EMOTES + camera energy + the diegetic action. Do NOT re-describe appearance. 1 sentence.",
-  "dialogue": "the single spoken line, in-character, hype, ~10-20 words for ~8s; express the cultural style; may include a SHORT native-language phrase. Just the words.",
+  "dialogue": "the single spoken line, in-character, ${minWords}-${maxWords} words for ~${duration}s unless deliberately sparse; express the cultural style; may include a SHORT native-language phrase. Just the words.",
   "caption": "scroll-stopping social caption + 1-2 emoji, <140 chars, ideally ending on an open loop."
 }`;
 }

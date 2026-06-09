@@ -73,6 +73,8 @@ web_modules/
 # MineBTC local generation outputs and secrets
 .DS_Store
 logs/
+!webui/app/api/jobs/\[id\]/logs/
+!webui/app/api/jobs/\[id\]/logs/route.ts
 trailer/out/
 trailer/cast/*
 !trailer/cast/.gitignore

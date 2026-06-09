@@ -1,0 +1,23 @@
+{
+  "name": "@lifeordream/ai-content-engine-webui",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local Next.js WebUI for the MineBTC AI Content Engine generation pipeline.",
+  "scripts": {
+    "dev": "next dev -H 127.0.0.1 -p 8787",
+    "build": "next build",
+    "start": "next start -H 127.0.0.1 -p 8787",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "next": "16.2.7",
+    "react": "^19.2.1",
+    "react-dom": "^19.2.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.7",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "typescript": "^5.6.3"
+  }
+}

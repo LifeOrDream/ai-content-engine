@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "description": "Open-source content pipeline for MineBTC HashBeasts, game-native story memory, prompts, trailers, and AI video.",
   "type": "module",
+  "workspaces": [
+    "webui"
+  ],
   "main": "./dist/src/index.js",
   "types": "./dist/src/index.d.ts",
   "exports": {
@@ -21,6 +24,9 @@
     "demo:fixture": "tsx scripts/demo_fixture.ts",
     "check:oss": "npm run typecheck && npm run demo:fixture",
     "service:worker": "tsx src/service/worker.ts",
+    "webui": "npm --workspace @lifeordream/ai-content-engine-webui run dev",
+    "webui:build": "npm --workspace @lifeordream/ai-content-engine-webui run build",
+    "webui:typecheck": "npm --workspace @lifeordream/ai-content-engine-webui run typecheck",
     "trailer:script": "tsx trailer/pipeline/run.ts",
     "trailer:canonize": "tsx trailer/pipeline/canonize.ts",
     "trailer:generate": "tsx trailer/generate/run.ts"
