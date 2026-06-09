@@ -17,7 +17,7 @@ export function GenerationDashboard({
   initialRuns: RunSummary[];
   initialJobs: PublicJob[];
 }) {
-  const [blueprints] = useState(initialBlueprints);
+  const [blueprints, setBlueprints] = useState(initialBlueprints);
   const [runs, setRuns] = useState(initialRuns);
   const [jobs, setJobs] = useState(initialJobs);
   const [selectedRunId, setSelectedRunId] = useState<string | null>(initialRuns[0]?.id || null);
@@ -42,6 +42,14 @@ export function GenerationDashboard({
     setHealth(healthData.ok ? "online" : "offline");
     setRuns(runsData.runs || []);
     setJobs(jobsData.jobs || []);
+  }
+
+  async function refreshBlueprints(): Promise<BlueprintSummary[]> {
+    const response = await fetch("/api/blueprints");
+    const data = await response.json();
+    const nextBlueprints = data.blueprints || [];
+    setBlueprints(nextBlueprints);
+    return nextBlueprints;
   }
 
   async function loadRun(id: string) {
@@ -108,7 +116,7 @@ export function GenerationDashboard({
 
       <main className={styles.grid}>
         <aside className={styles.leftRail}>
-          <RunLauncher blueprints={blueprints} onJobStarted={handleJobStarted} />
+          <RunLauncher blueprints={blueprints} onJobStarted={handleJobStarted} onBlueprintsChanged={refreshBlueprints} />
           <RunList runs={runs} selectedRunId={selectedRunId} onSelect={(id) => void loadRun(id)} />
         </aside>
 

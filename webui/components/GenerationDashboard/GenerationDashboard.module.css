@@ -6,7 +6,7 @@
 
 .hero {
   position: relative;
-  min-height: 270px;
+  min-height: 220px;
   overflow: hidden;
   border: 1px solid rgba(20, 217, 230, 0.22);
   border-radius: 30px;
@@ -36,7 +36,7 @@
   position: relative;
   z-index: 1;
   width: min(820px, calc(100% - 48px));
-  padding: 42px;
+  padding: 32px 36px;
 }
 
 .heroCopy p {
@@ -51,7 +51,7 @@
 .heroCopy h1 {
   margin: 0 0 18px;
   font-family: var(--font-mono);
-  font-size: clamp(2.3rem, 5vw, 5rem);
+  font-size: clamp(2rem, 4.2vw, 4rem);
   font-weight: 950;
   line-height: 0.92;
   letter-spacing: -0.07em;
@@ -98,7 +98,7 @@
 
 .grid {
   display: grid;
-  grid-template-columns: 340px minmax(0, 1fr) 390px;
+  grid-template-columns: 360px minmax(0, 1fr) 370px;
   gap: 18px;
   margin-top: 18px;
 }
@@ -110,9 +110,9 @@
   gap: 16px;
 }
 
-@media (max-width: 1280px) {
+@media (max-width: 1520px) {
   .grid {
-    grid-template-columns: 320px minmax(0, 1fr);
+    grid-template-columns: 360px minmax(0, 1fr);
   }
 
   .grid > :last-child {
@@ -127,7 +127,7 @@
   }
 
   .hero {
-    min-height: 430px;
+    min-height: 360px;
   }
 
   .heroCopy {

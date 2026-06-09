@@ -11,6 +11,11 @@ export interface BlueprintSummary {
   updatedAt: string;
 }
 
+export interface BlueprintDocument extends BlueprintSummary {
+  body: string;
+  raw: string;
+}
+
 export interface PublicJob {
   id: string;
   blueprintId: string;

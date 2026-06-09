@@ -1,18 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
-import { listBlueprints, saveBlueprintDocument } from "@/lib/contentEngine";
+import { getBlueprintDocument, saveBlueprintDocument } from "@/lib/contentEngine";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export function GET() {
-  return NextResponse.json({ blueprints: listBlueprints() });
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params;
+    return NextResponse.json({ blueprint: getBlueprintDocument(decodeURIComponent(id)) });
+  } catch (error: any) {
+    return NextResponse.json({ error: error?.message || String(error) }, { status: 404 });
+  }
 }
 
-export async function POST(request: NextRequest) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const body = await request.json();
     const blueprint = saveBlueprintDocument({
-      id: String(body.id || ""),
+      id: String(body.id || id),
       title: String(body.title || ""),
       logline: String(body.logline || ""),
       targetSeconds: Number(body.targetSeconds || 75),
@@ -21,8 +27,8 @@ export async function POST(request: NextRequest) {
       cta: String(body.cta || "Mine your HashBeast - minebtc.fun"),
       cast: Array.isArray(body.cast) ? body.cast.map(String) : String(body.cast || "").split(","),
       body: String(body.body || ""),
-    }, { create: true });
-    return NextResponse.json({ blueprint }, { status: 201 });
+    }, { create: false, currentId: decodeURIComponent(id) });
+    return NextResponse.json({ blueprint });
   } catch (error: any) {
     return NextResponse.json({ error: error?.message || String(error) }, { status: 400 });
   }

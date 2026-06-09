@@ -29,6 +29,23 @@ export interface BlueprintSummary {
   updatedAt: string;
 }
 
+export interface BlueprintDocument extends BlueprintSummary {
+  body: string;
+  raw: string;
+}
+
+export interface BlueprintSaveInput {
+  id: string;
+  title: string;
+  logline: string;
+  targetSeconds: number;
+  minSeconds: number;
+  countdown: string;
+  cta: string;
+  cast: string[];
+  body: string;
+}
+
 export interface RunSummary {
   id: string;
   title: string;
@@ -142,6 +159,84 @@ export function listBlueprints(): BlueprintSummary[] {
 
 export function blueprintById(id: string): BlueprintSummary | undefined {
   return listBlueprints().find((bp) => bp.id === id || bp.file.replace(/\.md$/, "") === id || bp.file.startsWith(id));
+}
+
+function assertBlueprintId(id: string): string {
+  const clean = String(id || "").trim().toLowerCase();
+  if (!/^[a-z0-9][a-z0-9-]{1,90}$/.test(clean)) {
+    throw new Error("Blueprint id must be lowercase letters, numbers, and dashes only");
+  }
+  return clean;
+}
+
+function blueprintPathById(id: string): string {
+  const clean = assertBlueprintId(id);
+  const hit = blueprintById(clean);
+  return path.join(BLUEPRINTS_DIR, hit?.file || `${clean}.md`);
+}
+
+export function getBlueprintDocument(id: string): BlueprintDocument {
+  const filePath = blueprintPathById(id);
+  if (!fs.existsSync(filePath)) throw new Error("Blueprint not found");
+  const raw = fs.readFileSync(filePath, "utf8");
+  const { data, body } = parseFrontmatter(raw);
+  const stat = fs.statSync(filePath);
+  const fallbackId = path.basename(filePath).replace(/\.md$/, "");
+  return {
+    id: data.id || fallbackId,
+    file: path.basename(filePath),
+    title: data.title || data.id || fallbackId,
+    logline: data.logline || "",
+    targetSeconds: Number(data.targetSeconds || 75),
+    minSeconds: Number(data.minSeconds || 24),
+    countdown: data.countdown || "24:00:00",
+    cta: data.cta || "Mine your HashBeast - minebtc.fun",
+    cast: (data.cast || "").split(",").map((item) => item.trim()).filter(Boolean),
+    updatedAt: stat.mtime.toISOString(),
+    body,
+    raw,
+  };
+}
+
+function yamlString(value: string): string {
+  return JSON.stringify(String(value || ""));
+}
+
+function formatBlueprint(input: BlueprintSaveInput): string {
+  const id = assertBlueprintId(input.id);
+  const title = String(input.title || id).trim();
+  const targetSeconds = Math.max(10, Math.round(Number(input.targetSeconds || 75)));
+  const minSeconds = Math.max(10, Math.round(Number(input.minSeconds || 24)));
+  const countdown = String(input.countdown || "24:00:00").trim();
+  const cta = String(input.cta || "Mine your HashBeast - minebtc.fun").trim();
+  const cast = input.cast.map((item) => item.trim()).filter(Boolean).join(",");
+  const logline = String(input.logline || "").trim();
+  const body = String(input.body || "").trim();
+  return [
+    "---",
+    `id: ${id}`,
+    `title: ${yamlString(title)}`,
+    `targetSeconds: ${targetSeconds}`,
+    `minSeconds: ${minSeconds}`,
+    `countdown: ${yamlString(countdown)}`,
+    `cta: ${yamlString(cta)}`,
+    `logline: ${yamlString(logline)}`,
+    `cast: ${yamlString(cast)}`,
+    "---",
+    body,
+    "",
+  ].join("\n");
+}
+
+export function saveBlueprintDocument(input: BlueprintSaveInput, options: { create: boolean; currentId?: string }): BlueprintDocument {
+  const id = assertBlueprintId(input.id);
+  const currentId = options.currentId ? assertBlueprintId(options.currentId) : id;
+  const targetPath = options.create ? path.join(BLUEPRINTS_DIR, `${id}.md`) : blueprintPathById(currentId);
+  if (options.create && fs.existsSync(targetPath)) throw new Error(`Blueprint already exists: ${id}`);
+  if (!options.create && !fs.existsSync(targetPath)) throw new Error("Blueprint not found");
+  if (!options.create && currentId !== id) throw new Error("Renaming existing blueprints is not supported yet; create a new blueprint instead");
+  fs.writeFileSync(targetPath, formatBlueprint({ ...input, id }), "utf8");
+  return getBlueprintDocument(id);
 }
 
 function words(text: string): string[] {
