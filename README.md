@@ -1,38 +1,118 @@
-# MineBTC AI Content Engine
+<p align="center">
+  <a href="https://www.minebtc.fun/">
+    <img src="src/assets/brand/brand_badge.png" alt="MineBTC" width="420">
+  </a>
+</p>
 
-Open-source AI showrunner infrastructure for game-native characters, story memory, prompt grammar, and video generation.
+<p align="center">
+  <a href="https://www.minebtc.fun/">
+    <img src="trailer/assets/reference/minebtc-x-header-1500x500.jpg" alt="MineBTC HashBeasts banner" width="900">
+  </a>
+</p>
+
+<h1 align="center">MineBTC AI Content Engine</h1>
+
+<p align="center">
+  <strong>The open-source content pipeline behind MineBTC HashBeasts.</strong><br>
+  Game events become character canon, scripts, keyframes, trailers, and social video proof.
+</p>
+
+<p align="center">
+  <a href="https://www.minebtc.fun/">Play MineBTC</a>
+  ·
+  <a href="https://x.com/minebtcdotfun">X / Twitter</a>
+  ·
+  <a href="trailer/README.md">Trailer Pipeline</a>
+  ·
+  <a href="CONTRIBUTING.md">Contribute</a>
+</p>
 
 [![CI](https://github.com/LifeOrDream/minebtc-ai-content-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/LifeOrDream/minebtc-ai-content-engine/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178c6.svg)](package.json)
 
-MineBTC is the first reference world: a country-vs-country degenBTC mining game where HashBeast characters evolve through gameplay and become the cast of an ongoing AI-generated show. The engine is meant to be reusable by other games, NFT worlds, creator communities, and agentic media teams that want structured story continuity instead of one-off AI clips.
+## What Is MineBTC?
 
-## Why This Exists
+[MineBTC](https://www.minebtc.fun/) is a country-vs-country mining game on Solana.
 
-Most AI video pipelines are prompt piles. They do not remember characters, they do not track story arcs, and they do not have a clean way to evaluate whether a generated clip stayed on-brand.
+Players pick a country, play the mining race, and collect/evolve HashBeasts: stylized dog-warrior operators with breed, country, role, gear, powers, personality, and story state. The game world is built around degenBTC: a mined token whose economy, emissions, rewards, and faction race create constant live events.
 
-This repo is our attempt to make the pipeline inspectable and improvable:
+The important content idea is simple:
 
-- Event-driven story planning from game/NFT state.
-- Character canon blocks that preserve breed, role, personality, gear, voice, and recent story.
-- Director grammar for consistent visual style across image and video models.
-- Multi-pass trailer scripting with engagement, dialogue, polish, direction, compile, and frame passes.
-- Redis/BullMQ service mode so a production backend can call the engine without importing it as local code.
-- Media proof and quality scorecards so contributors can improve outputs with evidence.
+> HashBeasts are not static NFTs. They are recurring characters in a living show produced by gameplay.
 
-## Current Status
+When HashBeasts mint, evolve, mutate, win rounds, lose status, unlock powers, or get pulled into country rivalries, those game events can become trailers, reels, faction propaganda, comedy beats, cliffhangers, and social posts. The content engine is how we turn game state into a consistent media universe instead of random AI clips.
 
-This is early, real code extracted from the MineBTC production/backend pipeline. The public API and folder layout may change while we make it contributor-friendly.
+## What This Repo Is
 
-Useful contribution areas today:
+This repo is the open-source MineBTC HashBeasts content pipeline.
 
-- Better scene/dialogue prompts.
-- Better Seedance / image-to-video motion prompts.
-- Better keyframe prompt structure for Nano Banana / image models.
-- Country/world-pack character and environment definitions.
-- Quality evaluation, media proof tooling, and benchmark fixtures.
-- Provider adapters for image, video, speech, music, and lip-sync models.
+It handles the creative layer:
+
+- Character canon: breed, faction, visual identity, owner/profile context, voice, personality, recent story.
+- Story memory: active arcs, unresolved threads, posted videos, character last-seen state.
+- Prompt grammar: director rules, camera/motion rules, negative prompts, model-safe style constraints.
+- Script pipeline: multi-pass trailer writing, dialogue refinement, scene direction, and frame planning.
+- Media generation: keyframe prompts, image/video/voice/lip-sync adapters, proof artifacts, and review loops.
+- Service mode: Redis/BullMQ worker so the game backend can send content jobs without importing this repo as local backend code.
+
+MineBTC is the reference implementation, but the structure is intentionally portable. Any game with characters, events, factions, story state, and media outputs should be able to adapt the same pattern.
+
+## Why Open Source This?
+
+AI video quality is not solved by one big prompt. It needs a system:
+
+- Canon so characters do not drift.
+- Story memory so clips compound instead of resetting.
+- Prompt packets so outputs can be reviewed and reproduced.
+- Reference assets so models stay on-brand.
+- Quality scorecards so contributors can improve the pipeline with evidence.
+- Adapters so the same story logic can work across different image, video, voice, and music models.
+
+We want contributors to help make the HashBeasts show better while also making a reusable content-engine pattern for other game worlds.
+
+## How The Pipeline Works
+
+```mermaid
+flowchart LR
+  A["MineBTC game / NFT events"] --> B["Backend adapter"]
+  B --> C["Redis / BullMQ queue"]
+  C --> D["Content engine worker"]
+  D --> E["Story planner"]
+  E --> F["Character canon + story memory"]
+  F --> G["Screenplay + dialogue"]
+  G --> H["Keyframe prompt packet"]
+  H --> I["Image / video / voice adapters"]
+  I --> J["Draft clip + media proof"]
+  J --> K["Human approval"]
+  K --> L["Posted video"]
+  L --> M["Canonized story memory"]
+  M --> G
+```
+
+Production boundary:
+
+- MineBTC backend owns game state, DB reads/writes, wallet/user context, budget gates, persistence, and posting.
+- This content engine owns story planning, prompt grammar, screenplay/script generation, keyframe prompt generation, trailer tooling, and media-generation helpers.
+- The service queue defaults to `minebtc-content-engine`.
+
+## Portable By Design
+
+This is not meant to be only a MineBTC private script folder. The reusable pattern is:
+
+```text
+game event -> character canon -> story memory -> script -> keyframe -> video -> proof -> canon update
+```
+
+To adapt it for another game, replace the world pack:
+
+- Characters instead of HashBeasts.
+- Factions/countries/guilds/teams instead of MineBTC countries.
+- Your own visual bible, camera grammar, and negative prompts.
+- Your own event types: mint, evolve, battle, trade, quest, raid, win, loss, betrayal, alliance.
+- Your own provider adapters for image, video, voice, music, storage, and delivery.
+
+The core goal stays the same: make generated content feel like it comes from a living world with consistent characters.
 
 ## Quick Start
 
@@ -55,7 +135,7 @@ npm run typecheck
 # Run a no-key contributor demo
 npm run demo:fixture
 
-# Run the Redis/BullMQ worker used by MineBtcBackend
+# Run the Redis/BullMQ content-engine worker used by MineBtcBackend
 npm run service:worker
 
 # Generate / iterate script passes for trailer 01
@@ -67,29 +147,6 @@ npm run trailer:generate -- 01
 # Canonize a posted video into story memory
 npm run trailer:canonize -- 01 --platform x --url https://x.com/... --video-no 1
 ```
-
-## Architecture
-
-```mermaid
-flowchart LR
-  A["Game / NFT events"] --> B["Backend adapter"]
-  B --> C["Redis / BullMQ queue"]
-  C --> D["Content engine service worker"]
-  D --> E["Story planner"]
-  E --> F["Screenplay + scene script"]
-  F --> G["Keyframe prompt packet"]
-  G --> H["Image / video / voice adapters"]
-  H --> I["Draft clip + media proof"]
-  I --> J["Human approval"]
-  J --> K["Canonized story memory"]
-  K --> F
-```
-
-MineBTC production runs this as a service boundary:
-
-- Backend owns game state, DB reads/writes, budget gates, persistence, and posting.
-- Content engine owns creative planning, director grammar, screenplay/script generation, keyframe prompt generation, trailer pipeline, and media-generation helpers.
-- Queue name defaults to `minebtc-content-engine`; set `CONTENT_ENGINE_QUEUE` in both repos if it changes.
 
 Local service mode needs Redis or Valkey:
 
@@ -108,6 +165,7 @@ trailer/blueprints/       Launch trailer rough story clay and series bible.
 trailer/pipeline/         Multi-pass screenplay/script compiler.
 trailer/generate/         Frame, video, audio, lip-sync, and assembly pipeline.
 trailer/world/            Country cast, location registry, and canon story memory.
+trailer/reference/        HashBeast character and environment reference boards.
 docs/                     Contributor docs, architecture, proof, world packs, adapters.
 .github/                  Issue templates, PR template, labels, CI, and ownership.
 ```
@@ -126,6 +184,14 @@ docs/                     Contributor docs, architecture, proof, world packs, ad
 ## How To Contribute
 
 Start with issues labeled `good first issue`, `area: prompts`, `area: evals`, `area: world-pack`, or `proof: needed`.
+
+High-impact contribution examples:
+
+- Improve HashBeast dialogue so characters sound like a bingeable show, not ad copy.
+- Improve keyframe prompts so attached character references stay consistent.
+- Add world-pack details for countries, breeds, environments, and faction rivalries.
+- Add evals that catch identity drift, generic crypto visuals, weak hooks, bad lip-sync, or muddy video.
+- Add provider adapters for better image, video, voice, music, storage, or review workflows.
 
 For prompt/video changes, PRs should include media proof:
 

@@ -1,7 +1,7 @@
 {
   "name": "@lifeordream/minebtc-ai-content-engine",
   "version": "0.1.0",
-  "description": "Open-source MineBTC AI content engine for HashBeast story, prompt, trailer, and video pipelines.",
+  "description": "Open-source content pipeline for MineBTC HashBeasts, game-native story memory, prompts, trailers, and AI video.",
   "type": "module",
   "main": "./dist/src/index.js",
   "types": "./dist/src/index.d.ts",
