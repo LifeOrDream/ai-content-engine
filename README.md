@@ -21,7 +21,7 @@
   <a href="CONTRIBUTING.md">Contribute</a>
 </p>
 
-[![CI](https://github.com/LifeOrDream/minebtc-ai-content-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/LifeOrDream/minebtc-ai-content-engine/actions/workflows/ci.yml)
+[![CI](https://github.com/LifeOrDream/ai-content-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/LifeOrDream/ai-content-engine/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178c6.svg)](package.json)
 

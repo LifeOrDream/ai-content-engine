@@ -1,5 +1,5 @@
 {
-  "name": "@lifeordream/minebtc-ai-content-engine",
+  "name": "@lifeordream/ai-content-engine",
   "version": "0.1.0",
   "description": "Open-source content pipeline for MineBTC HashBeasts, game-native story memory, prompts, trailers, and AI video.",
   "type": "module",
@@ -13,8 +13,7 @@
     "dist",
     "trailer",
     "scripts",
-    "src/assets/brand/brand_badge.png",
-    "src/assets/brand/minebtc-wordmark.png"
+    "src/assets/brand/brand_badge.png"
   ],
   "scripts": {
     "build": "tsc",
