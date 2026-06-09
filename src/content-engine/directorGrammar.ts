@@ -21,6 +21,8 @@ export function buildDialogueRulesBlock(targetSeconds?: number): string {
   return `DIALOGUE RULES
 Each spoken line must fit the shot duration: target ${minWords}-${maxWords} words for ~${secs}s unless the shot is deliberately silent.
 Lines must sound like characters in a comic thriller talking under pressure, not ad copy or a pitch deck. Avoid slogans, tutorial language, "screensaver" jokes, "founder's table", "pick up a pickaxe", "mine your destiny", or explaining mechanics directly.
+Every line needs a want + tactic: recruit, threaten, bluff, confess, deflect, bait, mourn, dare, reassure, or taunt. A line with no agenda is dead.
+Do not write prop-label fragments ("Slow.", "Locked.", "Gone.") for visual facts. Props show facts; mouths perform accusations, jokes, denials, dares, status games, and private tells.
 Use concrete stakes, rivalry, fear, confidence, betrayal, orders, warnings, jokes, or threats. If a stat matters, make it something a character reacts to, hides, weaponizes, or panics about.`;
 }
 

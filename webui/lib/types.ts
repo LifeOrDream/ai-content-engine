@@ -19,6 +19,7 @@ export interface BlueprintDocument extends BlueprintSummary {
 export interface PublicJob {
   id: string;
   blueprintId: string;
+  jobType: "script" | "render";
   command: string[];
   status: "running" | "success" | "failed" | "killed";
   pid?: number;
@@ -27,6 +28,87 @@ export interface PublicJob {
   exitCode?: number | null;
   signal?: string | null;
   logTail: string[];
+}
+
+export interface RunStageRecord {
+  id: string;
+  kind: string;
+  label: string;
+  status: "pending" | "running" | "success" | "failed" | "skipped";
+  startedAt?: string;
+  endedAt?: string;
+  durationMs?: number;
+  model?: string;
+  command?: string[];
+  outputFiles?: string[];
+  notes?: string[];
+  error?: string;
+}
+
+export interface RunArtifactRecord {
+  kind: "script" | "json" | "image" | "video" | "audio" | "subtitle" | "log" | "prompt";
+  label: string;
+  path: string;
+  bytes?: number;
+  createdAt: string;
+}
+
+export interface RunReferenceRecord {
+  sequence: number | string;
+  kind: "character" | "country" | "asset" | "environment-chain" | "unknown";
+  ref: string;
+  label?: string;
+  repoPath?: string;
+  status: "ready" | "planned" | "missing";
+}
+
+export interface RunFalRequestRecord {
+  stageId: string;
+  model: string;
+  requestId?: string;
+  outputUrl?: string;
+  sequence?: number | string;
+  createdAt: string;
+  durationSecs?: number;
+  resolution?: string;
+}
+
+export interface RunManifest {
+  version: 1;
+  blueprintId: string;
+  title: string;
+  logline?: string;
+  createdAt: string;
+  updatedAt: string;
+  gitCommit?: string;
+  targetSeconds?: number;
+  stages: RunStageRecord[];
+  artifacts: RunArtifactRecord[];
+  references: RunReferenceRecord[];
+  falRequests: RunFalRequestRecord[];
+  subtitles: RunArtifactRecord[];
+  costEstimate?: {
+    currency: "USD";
+    llmCalls: number;
+    imageCalls: number;
+    videoCalls: number;
+    videoSeconds: number;
+    estimatedUsd: number;
+    assumptions: string[];
+  };
+  quality?: {
+    dialogueScore?: number;
+    flaggedDialogue?: number;
+    dialogueLines?: number;
+    spokenSeconds?: number;
+    dialogueAvailableSeconds?: number;
+    dialogueOccupancyPct?: number;
+    startFrameCount?: number;
+    endFrameCount?: number;
+    totalRefs?: number;
+    missingStartFrames?: Array<number | string>;
+    missingRefs?: Array<number | string>;
+  };
 }
 
 export interface RunSummary {
@@ -51,11 +133,14 @@ export interface DialogueHealthLine {
   wordCount: number;
   minWords: number;
   estimatedSeconds: number;
+  occupancyPct: number;
+  maxWords: number;
   flags: string[];
 }
 
 export interface RunDetail extends RunSummary {
   allFiles: string[];
+  manifest: RunManifest | null;
   scenesSummary: null | {
     totalSeconds: number;
     sequenceCount: number;
@@ -79,6 +164,9 @@ export interface RunDetail extends RunSummary {
     avgWords: number;
     flaggedCount: number;
     score: number;
+    spokenSeconds: number;
+    availableSeconds: number;
+    occupancyPct: number;
     lines: DialogueHealthLine[];
   };
   frameHealth: null | {

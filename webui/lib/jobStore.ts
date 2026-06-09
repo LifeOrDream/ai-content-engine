@@ -1,12 +1,16 @@
 import "server-only";
+import fs from "node:fs";
+import path from "node:path";
 import { spawn, type ChildProcess } from "node:child_process";
-import { REPO_ROOT, PASS_IDS, blueprintById } from "./contentEngine";
+import { OUT_DIR, PASS_IDS, REPO_ROOT, blueprintById } from "./contentEngine";
 
 export type JobStatus = "running" | "success" | "failed" | "killed";
+export type JobType = "script" | "render";
 
 export interface WebJob {
   id: string;
   blueprintId: string;
+  jobType: JobType;
   command: string[];
   status: JobStatus;
   pid?: number;
@@ -26,16 +30,49 @@ type Store = {
   children: Map<string, ChildProcess>;
 };
 
+const JOBS_DIR = path.join(OUT_DIR, ".webui-jobs");
+const JOBS_FILE = path.join(JOBS_DIR, "jobs.json");
+
+function loadPersistedJobs(): Map<string, WebJob> {
+  try {
+    const raw = JSON.parse(fs.readFileSync(JOBS_FILE, "utf8")) as WebJob[];
+    const jobs = new Map<string, WebJob>();
+    for (const job of raw) {
+      const next: WebJob = {
+        ...job,
+        jobType: job.jobType || "script",
+        status: job.status === "running" ? "failed" : job.status,
+        endedAt: job.status === "running" ? job.endedAt || new Date().toISOString() : job.endedAt,
+        logs: Array.isArray(job.logs) ? job.logs.slice(-2500) : [],
+      };
+      if (job.status === "running") next.logs.push("WebUI restarted before this job finished; marking as failed locally.");
+      jobs.set(next.id, next);
+    }
+    return jobs;
+  } catch {
+    return new Map();
+  }
+}
+
 const globalForJobs = globalThis as typeof globalThis & {
   __minebtcWebuiJobs?: Store;
 };
 
 const store: Store = globalForJobs.__minebtcWebuiJobs || {
-  jobs: new Map<string, WebJob>(),
+  jobs: loadPersistedJobs(),
   children: new Map<string, ChildProcess>(),
 };
 
 globalForJobs.__minebtcWebuiJobs = store;
+
+function persistJobs(): void {
+  fs.mkdirSync(JOBS_DIR, { recursive: true });
+  fs.writeFileSync(
+    JOBS_FILE,
+    JSON.stringify(Array.from(store.jobs.values()).map((job) => ({ ...job, logs: job.logs.slice(-2500) })), null, 2) + "\n",
+    "utf8",
+  );
+}
 
 export function summarizeJob(job: WebJob): PublicJob {
   const { logs, ...rest } = job;
@@ -72,6 +109,42 @@ function pushLog(job: WebJob, chunk: Buffer | string): void {
     if (line.trim()) job.logs.push(line);
   }
   if (job.logs.length > 2500) job.logs.splice(0, job.logs.length - 2500);
+  persistJobs();
+}
+
+function startChildJob(job: WebJob, args: string[]): PublicJob {
+  store.jobs.set(job.id, job);
+  persistJobs();
+
+  const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
+  const child = spawn(npmCommand, args, {
+    cwd: REPO_ROOT,
+    env: process.env,
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  job.pid = child.pid;
+  persistJobs();
+  store.children.set(job.id, child);
+
+  child.stdout?.on("data", (chunk) => pushLog(job, chunk));
+  child.stderr?.on("data", (chunk) => pushLog(job, chunk));
+  child.on("error", (error) => {
+    job.status = "failed";
+    job.endedAt = new Date().toISOString();
+    pushLog(job, `spawn error: ${error.message}`);
+    store.children.delete(job.id);
+    persistJobs();
+  });
+  child.on("exit", (code, signal) => {
+    if (job.status !== "killed") job.status = code === 0 ? "success" : "failed";
+    job.exitCode = code;
+    job.signal = signal;
+    job.endedAt = new Date().toISOString();
+    store.children.delete(job.id);
+    persistJobs();
+  });
+
+  return summarizeJob(job);
 }
 
 export function startScriptJob(input: {
@@ -92,42 +165,43 @@ export function startScriptJob(input: {
     if (Number.isFinite(input.to)) args.push("--to", String(input.to));
   }
 
-  const job: WebJob = {
-    id: `${blueprint.id}-${Date.now().toString(36)}`,
+  return startChildJob({
+    id: `${blueprint.id}-script-${Date.now().toString(36)}`,
     blueprintId: blueprint.id,
+    jobType: "script",
     command: ["npm", ...args],
     status: "running",
     startedAt: new Date().toISOString(),
     logs: [],
-  };
-  store.jobs.set(job.id, job);
+  }, args);
+}
 
-  const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
-  const child = spawn(npmCommand, args, {
-    cwd: REPO_ROOT,
-    env: process.env,
-    stdio: ["ignore", "pipe", "pipe"],
-  });
-  job.pid = child.pid;
-  store.children.set(job.id, child);
+export function startRenderJob(input: {
+  blueprintId: string;
+  from?: number;
+  only?: number;
+  regen?: boolean;
+  assemble?: boolean;
+}): PublicJob {
+  const requested = String(input.blueprintId || "").trim();
+  const blueprint = blueprintById(requested);
+  if (!blueprint) throw new Error(`Unknown blueprint: ${requested}`);
 
-  child.stdout?.on("data", (chunk) => pushLog(job, chunk));
-  child.stderr?.on("data", (chunk) => pushLog(job, chunk));
-  child.on("error", (error) => {
-    job.status = "failed";
-    job.endedAt = new Date().toISOString();
-    pushLog(job, `spawn error: ${error.message}`);
-    store.children.delete(job.id);
-  });
-  child.on("exit", (code, signal) => {
-    if (job.status !== "killed") job.status = code === 0 ? "success" : "failed";
-    job.exitCode = code;
-    job.signal = signal;
-    job.endedAt = new Date().toISOString();
-    store.children.delete(job.id);
-  });
+  const args = ["run", "trailer:generate", "--", blueprint.id];
+  if (Number.isFinite(input.from)) args.push("--from", String(input.from));
+  if (Number.isFinite(input.only)) args.push("--only", String(input.only));
+  if (input.regen) args.push("--regen");
+  if (input.assemble === false) args.push("--no-assemble");
 
-  return summarizeJob(job);
+  return startChildJob({
+    id: `${blueprint.id}-render-${Date.now().toString(36)}`,
+    blueprintId: blueprint.id,
+    jobType: "render",
+    command: ["npm", ...args],
+    status: "running",
+    startedAt: new Date().toISOString(),
+    logs: [],
+  }, args);
 }
 
 export function killJob(id: string): PublicJob | null {
@@ -137,5 +211,6 @@ export function killJob(id: string): PublicJob | null {
   job.status = "killed";
   job.endedAt = new Date().toISOString();
   child.kill("SIGTERM");
+  persistJobs();
   return summarizeJob(job);
 }

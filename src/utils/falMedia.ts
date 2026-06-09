@@ -133,11 +133,45 @@ export async function fetchAsBuffer(url: string): Promise<Buffer> {
  * queue models; the synchronous endpoint times out on video/lip-sync. Returns
  * the model's output JSON (the `data` payload). Honors `timeoutMs`.
  */
-async function falRun(
+interface FalRunMeta {
+  model: string;
+  requestId?: string;
+  statusUrl?: string;
+  responseUrl?: string;
+}
+
+interface FalRunResult {
+  data: any;
+  meta: FalRunMeta;
+}
+
+function requestIdFromSubmit(submit: any): string | undefined {
+  const direct = submit?.request_id || submit?.requestId || submit?.id;
+  if (direct) return String(direct);
+  for (const value of [submit?.status_url, submit?.response_url]) {
+    if (!value || typeof value !== "string") continue;
+    const match = value.match(/\/requests\/([^/?#]+)/i);
+    if (match?.[1]) return decodeURIComponent(match[1]);
+  }
+  return undefined;
+}
+
+function attachFalMeta(data: any, meta: FalRunMeta): any {
+  if (data && typeof data === "object") {
+    Object.defineProperty(data, "__falMeta", {
+      value: meta,
+      enumerable: false,
+      configurable: true,
+    });
+  }
+  return data;
+}
+
+async function falRunDetailed(
   model: string,
   input: Record<string, unknown>,
   timeoutMs = 120_000,
-): Promise<any> {
+): Promise<FalRunResult> {
   // Use the key bound to the current async context (set by the fal key pool
   // via withFalKey) so parallel jobs run on different keys; fall back to the
   // single env key when no pool context is active.
@@ -159,9 +193,15 @@ async function falRun(
   const submit = await submitRes.json();
   const statusUrl: string | undefined = submit?.status_url;
   const responseUrl: string | undefined = submit?.response_url;
+  const meta: FalRunMeta = {
+    model,
+    requestId: requestIdFromSubmit(submit),
+    statusUrl,
+    responseUrl,
+  };
   if (!statusUrl || !responseUrl) {
     // Some models answer synchronously even via queue — accept a direct payload.
-    if (submit && (submit.images || submit.video || submit.audio)) return submit;
+    if (submit && (submit.images || submit.video || submit.audio)) return { data: attachFalMeta(submit, meta), meta };
     throw new Error(`fal submit ${model}: no status/response url`);
   }
   // 2. Poll. The response endpoint can briefly report "still in progress"
@@ -184,7 +224,10 @@ async function falRun(
     if (status !== "COMPLETED") continue;
 
     const rres = await fetchWithRetry(responseUrl, { headers }, { attempts: 3, label: `fal result ${model}` });
-    if (rres.ok) return rres.json();
+    if (rres.ok) {
+      const data = await rres.json();
+      return { data: attachFalMeta(data, meta), meta };
+    }
 
     const text = await rres.text();
     if (rres.status === 400 && /still in progress/i.test(text)) {
@@ -196,6 +239,14 @@ async function falRun(
   throw new Error(
     `fal ${model} timed out after ${timeoutMs}ms: ${JSON.stringify(lastStatus).slice(0, 300)}`,
   );
+}
+
+async function falRun(
+  model: string,
+  input: Record<string, unknown>,
+  timeoutMs = 120_000,
+): Promise<any> {
+  return (await falRunDetailed(model, input, timeoutMs)).data;
 }
 
 export async function imageUrlToBase64DataUri(url: string): Promise<string> {
@@ -213,6 +264,8 @@ export async function imageUrlToBase64DataUri(url: string): Promise<string> {
 export interface GeneratedMedia {
   url: string; // fal-hosted source URL
   buffer: Buffer;
+  model?: string;
+  requestId?: string;
 }
 
 export async function generateImageEdit(
@@ -262,7 +315,13 @@ async function generateImageEditFromDataUris(
   );
   const url = data?.images?.[0]?.url;
   if (!url) throw new Error("fal image edit returned no image");
-  return { url, buffer: await fetchAsBuffer(url) };
+  const meta = data?.__falMeta as FalRunMeta | undefined;
+  return {
+    url,
+    buffer: await fetchAsBuffer(url),
+    model: meta?.model || FAL_IMAGE_MODEL,
+    requestId: meta?.requestId,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -309,7 +368,13 @@ export async function generateVideoFromFrames(
   // fal video models return { video: { url } } (most) or { videos: [{url}] }.
   const url = data?.video?.url || data?.videos?.[0]?.url;
   if (!url) throw new Error("fal video returned no url");
-  return { url, buffer: await fetchAsBuffer(url) };
+  const meta = data?.__falMeta as FalRunMeta | undefined;
+  return {
+    url,
+    buffer: await fetchAsBuffer(url),
+    model: meta?.model || opts.model || VIDEO_MODEL,
+    requestId: meta?.requestId,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -365,7 +430,8 @@ export async function generateSpeech(
   const data = await falRun(TTS_MODEL, body, 90_000);
   const url = data?.audio?.url || data?.audio_url || data?.url;
   if (!url) throw new Error("fal TTS returned no audio url");
-  return { url, buffer: await fetchAsBuffer(url) };
+  const meta = data?.__falMeta as FalRunMeta | undefined;
+  return { url, buffer: await fetchAsBuffer(url), model: meta?.model || TTS_MODEL, requestId: meta?.requestId };
 }
 
 /**
@@ -388,7 +454,8 @@ export async function lipSyncVideo(
   );
   const url = data?.video?.url || data?.videos?.[0]?.url || data?.url;
   if (!url) throw new Error("fal lipsync returned no url");
-  return { url, buffer: await fetchAsBuffer(url) };
+  const meta = data?.__falMeta as FalRunMeta | undefined;
+  return { url, buffer: await fetchAsBuffer(url), model: meta?.model || LIPSYNC_MODEL, requestId: meta?.requestId };
 }
 
 /**
@@ -401,7 +468,8 @@ async function generateAudioClip(model: string, prompt: string, seconds: number)
   const url =
     data?.audio_file?.url || data?.audio?.url || data?.audio_url || data?.url || data?.audio_file;
   if (!url || typeof url !== "string") throw new Error(`audio gen (${model}) returned no url`);
-  return { url, buffer: await fetchAsBuffer(url) };
+  const meta = data?.__falMeta as FalRunMeta | undefined;
+  return { url, buffer: await fetchAsBuffer(url), model: meta?.model || model, requestId: meta?.requestId };
 }
 
 /** Generate a music bed from a mood prompt (looped under the video at assembly). */

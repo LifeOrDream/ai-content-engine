@@ -56,6 +56,7 @@ ${buildDirectorPromptBlock({ aspectRatio: "9:16" })}
 ${buildDialogueRulesBlock(input.videoDurationSecs)}
 
 Dialogue timing for this scene: target ${minWords}-${maxWords} spoken words unless the scene explicitly uses silence, interruption, or reaction time. Do not write a tiny tagline for a long speaking window. The line must be behavior: a bluff, dare, accusation, recruitment attempt, confession, deflection, joke hiding fear, or rivalry move. It must not sound like a feature label, landing page, crypto tutorial, or prop inventory.
+Before output, run a silent table-read: if the character name were hidden, the line should still sound like this exact HashBeast's voice, status, country context, and current arc. If the line sounds like a caption, mechanic explanation, slogan, or founder pitch, rewrite it.
 
 Use the short-form formula: a HOOK in the first beat, quick escalation, a payoff, and a LOOP/cliffhanger feel. Write STRICT JSON (no markdown):
 {

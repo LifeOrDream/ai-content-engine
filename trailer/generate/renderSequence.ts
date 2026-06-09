@@ -49,6 +49,16 @@ export interface RenderSequenceResult {
   seconds: number;
   startFramePath: string;
   endFramePath?: string;
+  falRequests: Array<{
+    stageId: string;
+    kind: "image" | "video";
+    model?: string;
+    requestId?: string;
+    outputUrl?: string;
+    sequence: number;
+    durationSecs?: number;
+    resolution?: string;
+  }>;
 }
 
 const step = (seq: Sequence, label: string) => {
@@ -268,7 +278,20 @@ async function ensureFrame(
   framesDir: string,
   scratch: string,
   opts: RenderSequenceOptions,
-): Promise<{ buffer: Buffer; url: string; file: string }> {
+): Promise<{
+  buffer: Buffer;
+  url: string;
+  file: string;
+  request?: {
+    stageId: string;
+    kind: "image";
+    model?: string;
+    requestId?: string;
+    outputUrl?: string;
+    sequence: number;
+    resolution?: string;
+  };
+}> {
   fs.mkdirSync(framesDir, { recursive: true });
   const file = sequenceFramePath(framesDir, seq.n, kind);
   let buffer: Buffer;
@@ -296,6 +319,21 @@ async function ensureFrame(
       );
       buffer = img.buffer;
       fs.writeFileSync(file, buffer);
+      const url = await uploadBufferToS3(`${scratch}/seq${seq.n}_${kind}.png`, buffer, "image/png");
+      return {
+        buffer,
+        url,
+        file,
+        request: {
+          stageId: `frame:seq-${seq.n}:${kind}`,
+          kind: "image",
+          model: img.model,
+          requestId: img.requestId,
+          outputUrl: img.url,
+          sequence: seq.n,
+          resolution: IMG_RES,
+        },
+      };
     }
   }
   step(seq, `uploading ${kind} frame`);
@@ -320,6 +358,7 @@ export async function renderSequence(
   };
   const start = await ensureFrame(seq, startPlan, "start", look, framesDir, scratch, opts);
   const end = seq.endFrame ? await ensureFrame(seq, seq.endFrame, "end", look, framesDir, scratch, opts) : undefined;
+  const falRequests = [start.request, end?.request].filter(Boolean) as RenderSequenceResult["falRequests"];
 
   // 2. the timeline generation (one Seedance 2.0 call; native cuts + audio)
   const wantSec = Math.max(VIDEO_MIN_SEC, Math.round(Number(seq.durationSec) || 10));
@@ -341,6 +380,16 @@ export async function renderSequence(
     model: SEQ_VIDEO_MODEL,
     generateAudio: NATIVE_AUDIO,
   });
+  falRequests.push({
+    stageId: `video:seq-${seq.n}`,
+    kind: "video",
+    model: vid.model || SEQ_VIDEO_MODEL,
+    requestId: vid.requestId,
+    outputUrl: vid.url,
+    sequence: seq.n,
+    durationSecs,
+    resolution: VIDEO_RES,
+  });
 
   // 3. timed captions (per-shot overlays) + normalize
   step(seq, "captions + normalize");
@@ -350,5 +399,5 @@ export async function renderSequence(
   let buffer = await burnTimedCaptions(vid.buffer, captions);
   buffer = await normalizeAndCaption(buffer); // 1080p/30fps normalize (no extra caption)
   const seconds = await probeDuration(buffer);
-  return { buffer, seconds, startFramePath: start.file, endFramePath: end?.file };
+  return { buffer, seconds, startFramePath: start.file, endFramePath: end?.file, falRequests };
 }

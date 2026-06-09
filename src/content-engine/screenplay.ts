@@ -2,6 +2,7 @@ import {
   buildDialogueRulesBlock,
   buildDirectorPromptBlock,
 } from "./directorGrammar.js";
+import { parseJsonLoose as parseJsonLooseShared } from "./llmText.js";
 import type {
   CastMember,
   FactionStanding,
@@ -81,9 +82,10 @@ function craftBlock(g: StoryGrounding, format: VideoFormat): string {
   const crops = format.defaultOutputs.filter((a) => a !== format.aspectRatio);
   const frameRule = `FRAME ${format.aspectRatio}${crops.length ? ` (also cropped to ${crops.join("/")} — KEEP the main subject/action CENTERED so the crops still frame it)` : ""}. Each shot needs a CAPTION (punchy on-screen text) for sound-off viewing.`;
   const shared = [
-    `4. SHOW, DON'T TELL: reveal the economy + geopolitics THROUGH action and trash-talk, not narration. Use SPECIFIC real numbers from the live state ("Korea ripped past us — price pumped ${pct(g.economy.priceChangePct)} and emissions dropped, their stakers are eating") — specificity sells, vague filler dies.`,
-    `5. CHARACTER: every line in-character + in that nation's voice/accent; lean on each beast's personality, catchphrase, rivalry, wizard/muggle profession. Country-vs-country beef is the engine.`,
-    `6. ${frameRule}`,
+    `4. SHOW, DON'T TELL: reveal economy/geopolitics THROUGH behavior, rivalry, fear, status games, props, and on-screen facts — not narration. Hard numbers belong in captions/visuals unless a character is weaponizing that number in a natural argument.`,
+    `5. CHARACTER: every line must have a want + tactic: recruit, threaten, bluff, confess, deflect, bait, mourn, dare, reassure, or taunt. If the line could be moved to a landing page, caption, or mechanic tooltip, rewrite it.`,
+    `6. DIALOGUE TIMING: do not write tiny taglines for long shots. A speaking shot should carry enough words for its duration unless the action explicitly spends time on silence, interruption, reaction, or physical comedy.`,
+    `7. ${frameRule}`,
   ];
   if (format.craftMode === "feature") {
     return [
@@ -92,8 +94,8 @@ function craftBlock(g: StoryGrounding, format: VideoFormat): string {
       `2. PACING: a developed ${Math.round(format.targetSeconds / 60 * 10) / 10}-min video — shots 4–8s, room to breathe between hits but NEVER boring. ≈ ${format.targetSeconds}s across ${format.minShots}–${format.maxShots} shots. Build in mini-beats (almost chapters): intro → stakes → escalation → the turn → payoff → outro.`,
       `3. SPINE: tell a COMPLETE story this episode with a satisfying payoff (this plays on YouTube/Twitter/IG, not a Shorts feed — earn the watch-through), while still teasing what's next.`,
       ...shared,
-      `7. OUTRO/CTA: the LAST shot is an outro — the cast rallying viewers to pick a country + mine $degenBTC at minebtc.fun.`,
-      `8. Keep it FUN, sharp, a little unhinged — degen energy, meme-aware, grounded in our world's aesthetic.`,
+      `8. OUTRO/CTA: the LAST shot is an outro — the cast rallying viewers to pick a country + mine $degenBTC at minebtc.fun.`,
+      `9. Keep it FUN, sharp, a little unhinged — degen energy, meme-aware, grounded in our world's aesthetic.`,
     ].join("\n");
   }
   return [
@@ -102,7 +104,7 @@ function craftBlock(g: StoryGrounding, format: VideoFormat): string {
     `2. PACING: short shots (3–8s each), fast cuts, rising stakes. Total runtime ≈ ${format.targetSeconds}s across ${format.minShots}–${format.maxShots} shots.`,
     `3. SPINE: hook → setup → escalation → a turn/twist → payoff → CLIFFHANGER (an open loop that makes them wait for the next episode).`,
     ...shared,
-    `7. Keep it FUN, fast, and a little unhinged — degen energy, meme-aware, but grounded in our world's aesthetic.`,
+    `8. Keep it FUN, fast, and a little unhinged — degen energy, meme-aware, but grounded in our world's aesthetic.`,
   ].join("\n");
 }
 
@@ -140,6 +142,15 @@ ${buildDirectorPromptBlock(format)}
 
 ${buildDialogueRulesBlock(Math.round(format.targetSeconds / Math.max(format.minShots, 1)))}
 
+═══════════ DIALOGUE QUALITY GATE — RUN BEFORE JSON OUTPUT ═══════════
+For every spoken line, silently check:
+1. What does the speaker WANT from the listener right now?
+2. What TACTIC are they using — bluff, dare, accusation, recruitment, confession, deflection, joke hiding fear, rivalry move?
+3. Does the line fit the shot time when spoken at ~2.3 words/sec?
+4. Would this still sound like the same character if the prop/caption were hidden?
+5. Did you avoid prop labels, mechanic phrases, founder/pitch language, and inspirational thesis lines?
+If any answer fails, rewrite the line before output.
+
 ═══════════ OUTPUT — STRICT JSON ONLY (no markdown, no commentary) ═══════════
 {
   "logline": "one-sentence hook for the post",
@@ -175,21 +186,7 @@ function clamp(n: number, lo: number, hi: number): number {
 }
 
 export function parseJsonLoose<T>(raw: string): T | null {
-  const cleaned = raw.replace(/^```(?:json)?/i, "").replace(/```$/i, "").trim();
-  try {
-    return JSON.parse(cleaned) as T;
-  } catch {
-    const start = cleaned.indexOf("{");
-    const end = cleaned.lastIndexOf("}");
-    if (start >= 0 && end > start) {
-      try {
-        return JSON.parse(cleaned.slice(start, end + 1)) as T;
-      } catch {
-        return null;
-      }
-    }
-    return null;
-  }
+  return parseJsonLooseShared<T>(raw);
 }
 
 export function normalizeScreenplay(

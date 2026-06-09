@@ -100,6 +100,123 @@
   font-weight: 950;
 }
 
+.factoryGrid,
+.assetPanels,
+.subtitleGrid {
+  display: grid;
+  gap: 14px;
+}
+
+.auditCard {
+  border: 1px solid rgba(148, 174, 192, 0.16);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(20, 217, 230, 0.08), transparent 32%),
+    rgba(255, 255, 255, 0.03);
+  padding: 14px;
+}
+
+.auditCard h3 {
+  margin: 0 0 8px;
+  color: var(--mb-console-text);
+  font-family: var(--font-mono);
+  font-size: 1rem;
+}
+
+.auditCard p {
+  margin: 0 0 10px;
+  color: var(--mb-console-muted);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.auditCard a {
+  color: var(--mb-signal-cyan);
+  font-weight: 900;
+}
+
+.costGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(120px, 1fr));
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.costGrid .metric {
+  min-height: 74px;
+  padding: 12px;
+}
+
+.costGrid .metric span {
+  font-size: 1.25rem;
+}
+
+.stageList {
+  display: grid;
+  gap: 10px;
+}
+
+.stageRow {
+  display: grid;
+  grid-template-columns: 12px 1fr;
+  gap: 10px;
+  align-items: start;
+  border-bottom: 1px solid rgba(148, 174, 192, 0.1);
+  padding-bottom: 10px;
+}
+
+.stageRow:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.stageRow strong,
+.stageRow small,
+.stageRow em {
+  display: block;
+}
+
+.stageRow small {
+  margin-top: 4px;
+  color: var(--mb-console-muted);
+  font-size: 0.72rem;
+}
+
+.stageRow em {
+  margin-top: 5px;
+  color: #ff9ba5;
+  font-size: 0.72rem;
+  font-style: normal;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  margin-top: 4px;
+  border-radius: 999px;
+  background: rgba(148, 174, 192, 0.42);
+}
+
+.pending,
+.planned {
+  color: var(--mb-console-muted);
+}
+
+.dot.running {
+  background: var(--mb-signal-cyan);
+  box-shadow: 0 0 18px rgba(20, 217, 230, 0.68);
+}
+
+.dot.success,
+.dot.ready {
+  background: var(--mb-solana-green);
+}
+
+.dot.failed,
+.dot.missing {
+  background: #ff4d5e;
+}
+
 .tabs {
   display: flex;
   flex-wrap: wrap;
@@ -154,6 +271,22 @@
   color: var(--mb-console-muted);
   font-size: 0.84rem;
   line-height: 1.55;
+}
+
+.dialogueSummary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(120px, 1fr));
+  gap: 10px;
+  margin: 0 0 14px;
+}
+
+.dialogueSummary .metric {
+  min-height: 72px;
+  padding: 12px;
+}
+
+.dialogueSummary .metric span {
+  font-size: 1.25rem;
 }
 
 .table {
@@ -252,9 +385,74 @@
   font-size: 0.8rem;
 }
 
+.refGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.refCard {
+  min-width: 0;
+  border: 1px solid rgba(148, 174, 192, 0.15);
+  border-radius: 16px;
+  background: rgba(3, 7, 13, 0.46);
+  padding: 10px;
+}
+
+.refCard img,
+.refPlaceholder {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 12px;
+  object-fit: cover;
+  background: rgba(20, 217, 230, 0.08);
+}
+
+.refPlaceholder {
+  display: grid;
+  place-items: center;
+  color: var(--mb-console-muted);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.refCard strong {
+  display: block;
+  margin-top: 9px;
+  overflow-wrap: anywhere;
+  font-size: 0.78rem;
+}
+
+.refCard small {
+  display: block;
+  margin-top: 5px;
+  color: var(--mb-console-muted);
+  font-size: 0.68rem;
+  line-height: 1.35;
+}
+
+.statusPill {
+  display: inline-flex;
+  margin-top: 6px;
+  border: 1px solid rgba(148, 174, 192, 0.2);
+  border-radius: 999px;
+  padding: 3px 7px;
+  font-size: 0.62rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
 @media (max-width: 860px) {
   .cards {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .costGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dialogueSummary {
+    grid-template-columns: 1fr;
   }
 }
 

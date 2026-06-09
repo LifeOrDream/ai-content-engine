@@ -269,6 +269,11 @@ A character who is afraid should pursue a want that HIDES the fear (e.g. Rex jok
 STEP 2 — WRITE THE DIALOGUE:
 Write the spoken lines so each one EXECUTES the INTENT you just sharpened, in that character's VOICE PROFILE above.
 
+AUDITION BEFORE CHOOSING (silent craft step, do NOT output this scratch work):
+- For every speaking shot, privately draft 2-3 possible line angles before choosing the final: one status/taunt version, one fear/subtext version, and one weird-comic version if the beat allows comedy.
+- Pick the version that best serves the LOOP duty, fits the shot duration when spoken, and sounds most unmistakably like that character. Output only the chosen line in the shot.
+- If all candidates sound like captions, slogans, or prop labels, the intent is too weak — sharpen the INTENT and try again.
+
 THE LINE SERVES ITS LOOP FIRST (the #1 job):
 - Every beat has a LOOP duty. The LINE is that loop's delivery vehicle: the hook line must actually pop the core question, a "raises" line must sharpen the guess, a head-fake line must genuinely misdirect, the payoff line must land the non-obvious answer. A charming line that fails its beat's LOOP duty is a failed line — rewrite it. Loop duty first, voice second, cleverness last.
 

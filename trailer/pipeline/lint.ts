@@ -10,51 +10,26 @@ import { castEntry } from "../style/castCanon.js";
 import type { Blueprint, Screenplay } from "./types.js";
 import { isReferenceAssetRef } from "../world/assetRegistry.js";
 import { resolveCountryCharacterProfile } from "../world/countryCastRegistry.js";
+import {
+  BANNED_DIALOGUE_PATTERNS,
+  BANNED_PITCH_PHRASES,
+  NAMED_EMOTION_PATTERN,
+  WORDS_PER_SECOND,
+  dialogueWords,
+  minDialogueWordsForSlot,
+  normalizeForDialogue,
+} from "../../src/content-engine/dialogueQuality.js";
 
 export interface LintResult {
   errors: string[];
   warnings: string[];
 }
 
-const WORDS_PER_SEC = 2.3;
 const MAX_LINE_WORDS = 34; // one cinematic speech chunk; density checks below block tiny barks
 const MAX_SEQ_CHARS = 3;
 
-const norm = (s: string) => String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
-const words = (s: string) => norm(s).split(" ").filter(Boolean);
-
-/** Pitch-deck / AI-slop lexicon (warned, not blocked — context matters). */
-const BANNED_PHRASES = [
-  "revolutionary", "cutting-edge", "cutting edge", "game-changing", "game changer",
-  "seamless", "unlock the", "empower", "isn't just a", "is not just a",
-  "next-generation", "next generation", "ecosystem of", "paradigm",
-  "best-in-class", "world-class", "supercharge", "skyrocket",
-];
-
-/** Dialogue-only smells: terms that make characters sound like docs/tutorials instead of comic/show characters. */
-const BANNED_DIALOGUE_PATTERNS: Array<[RegExp, string]> = [
-  [/^\s*(slow|sealed|yield|faster|mine|locked)\s*[.!?]?\s*$/i, "single-word prop label"],
-  [/\bno yield\b/i, "mechanic phrase: no yield"],
-  [/\bno pulse\b/i, "mechanic phrase: no pulse"],
-  [/\bscreensaver\b/i, "try-hard tech joke: screensaver"],
-  [/\bvelvet rope\b/i, "launch metaphor smell: velvet rope"],
-  [/\bfounder'?s table\b/i, "launch metaphor smell: founder's table"],
-  [/\bpick up a pickaxe\b/i, "tutorial phrase: pick up a pickaxe"],
-  [/\bearn the signal\b/i, "abstract trailer phrase: earn the signal"],
-  [/\beverything that replaced something broken\b/i, "inspirational thesis line"],
-  [/\bstarted with one room\b/i, "inspirational thesis line"],
-  [/\bbefore anyone asked\b/i, "inspirational thesis line"],
-  [/\bsomething broken\b/i, "abstract thesis phrase: something broken"],
-  [/\bfair launch\b/i, "mechanic phrase: fair launch"],
-  [/\bpre[- ]?mine\b/i, "mechanic phrase: pre-mine"],
-  [/\binsiders?\b/i, "mechanic phrase: insiders"],
-  [/\bemissions?\b/i, "mechanic phrase: emissions"],
-  [/\b4[- ]?hour\b/i, "mechanic phrase: 4-hour"],
-  [/\bleaderboard\b/i, "UI/mechanic phrase: leaderboard"],
-];
-
-/** "Named emotion" patterns — characters must show, not say. */
-const NAMED_EMOTION = /\b(i'?m|i am|we'?re|we are)\s+(scared|afraid|terrified|worried|nervous|excited|sad|angry|happy)\b/i;
+const norm = normalizeForDialogue;
+const words = dialogueWords;
 
 /** Motion words that don't belong in a STILL frame prompt. */
 const MOTION_WORDS = [
@@ -66,13 +41,6 @@ const MOTION_WORDS = [
 /** Internal grammar codes that must never reach a Seedance/keyframe prompt. */
 const INTERNAL_CODE = /\b(?:M[LAMCTRXPS]\d|MPAL\d|MPT-[A-D]|ME\d|MR\d)\b/;
 const DELIBERATE_SILENCE = /\b(silence|silent|no words|wordless|cut off|cuts? off|interrupted|unfinished|stops mid|holds?|pause|beat|stare|look|reaction|deadpan)\b/i;
-
-function minDialogueWordsForSlot(seconds: number): number {
-  if (seconds < 3) return 0;
-  if (seconds < 5) return 4;
-  // Dialogue-driven shots should speak for roughly 55-70% of the shot.
-  return Math.ceil(Math.max(0, seconds - 1.4) * WORDS_PER_SEC * 0.62);
-}
 
 function isDeliberatelySparse(sh: { action?: string; performance?: string; sound?: string; dialogue?: Array<{ delivery?: string; line?: string }> }): boolean {
   const text = [
@@ -140,13 +108,13 @@ export function lintText(passId: string, text: string, bp: Blueprint, maxSeqSec?
   const lines = extractDialogueLines(text);
   for (const line of lines) {
     const ln = norm(line);
-    for (const banned of BANNED_PHRASES) {
+    for (const banned of BANNED_PITCH_PHRASES) {
       if (ln.includes(norm(banned))) warnings.push(`pitch-deck smell in line: "${line}" (${banned})`);
     }
     for (const [pattern, reason] of BANNED_DIALOGUE_PATTERNS) {
       if (pattern.test(line) && !isKeeperish(line)) errors.push(`bad dialogue smell (${reason}): "${line}"`);
     }
-    if (NAMED_EMOTION.test(line)) warnings.push(`named emotion (show, don't say): "${line}"`);
+    if (NAMED_EMOTION_PATTERN.test(line)) warnings.push(`named emotion (show, don't say): "${line}"`);
     if (passId !== "engagement" && words(line).length > MAX_LINE_WORDS && !isKeeperish(line)) {
       warnings.push(`single dialogue chunk may be too long (${words(line).length} words): "${line}"`);
     }
@@ -180,7 +148,7 @@ export function lintText(passId: string, text: string, bp: Blueprint, maxSeqSec?
       const fragments = m[6].split("\n").flatMap(extractSpeakerFragments);
       const spokenWords = words(fragments.join(" ")).length;
       if (spokenWords > 0) {
-        const fit = spokenWords / WORDS_PER_SEC + 0.5;
+        const fit = spokenWords / WORDS_PER_SECOND + 0.5;
         if (fit > len + 0.5) errors.push(`SHOT ${shotNo}: directed dialogue (~${fit.toFixed(1)}s) won't fit the ${len.toFixed(1)}s slot`);
         const minWords = minDialogueWordsForSlot(len);
         if (spokenWords < minWords && !DELIBERATE_SILENCE.test(m[6])) warnings.push(`SHOT ${shotNo}: directed dialogue may be sparse for ${len.toFixed(1)}s slot (${spokenWords} words; target at least ${minWords}, or mark deliberate silence/reaction)`);
@@ -230,7 +198,7 @@ export function lintScreenplay(sp: Screenplay, directedText: string, maxSeqSec: 
       const spoken = (sh.dialogue || []).map((d) => d.line).join(" ");
       if (spoken) {
         const spokenWords = words(spoken).length;
-        const fit = spokenWords / WORDS_PER_SEC + 0.5;
+        const fit = spokenWords / WORDS_PER_SECOND + 0.5;
         if (fit > len + 0.5) errors.push(`${stag}: dialogue (~${fit.toFixed(1)}s) won't fit the ${len.toFixed(1)}s slot`);
         const minWords = minDialogueWordsForSlot(len);
         if (spokenWords < minWords && !isDeliberatelySparse(sh)) {

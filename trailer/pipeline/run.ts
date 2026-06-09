@@ -24,6 +24,14 @@ import { CINEMATIC_PRODUCTION_PLAN } from "../world/cinematicProduction.js";
 import { buildShowrunnerMemoryPacket, writeDraftCanonSidecar } from "../world/storyMemory.js";
 import { buildCountryCastPromptBlock } from "../world/countryCastRegistry.js";
 import { buildLocationPromptBlock } from "../world/locationRegistry.js";
+import {
+  beginRunStage,
+  completeRunStage,
+  ensureRunManifest,
+  failRunStage,
+  refreshRunManifestFromScreenplay,
+  registerRunArtifact,
+} from "./runManifest.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
@@ -74,6 +82,25 @@ function resolveBlueprint(idArg: string): Blueprint {
   return parseBlueprint(path.join(BLUEPRINTS, hit));
 }
 
+async function parseJsonOrRepair<T>(raw: string, passId: string): Promise<T> {
+  const parsed = parseJsonLoose<T>(raw);
+  if (parsed) return parsed;
+  const repaired = await callLLM(
+    [
+      "Repair this malformed model output into STRICT valid JSON only.",
+      "Do not add new story content. Preserve all fields, dialogue, timestamps, refs, and prompt text exactly where possible.",
+      `Pass id: ${passId}`,
+      "Return ONLY the corrected JSON object, no markdown.",
+      "",
+      raw,
+    ].join("\n"),
+    { temperature: 0.1, json: true },
+  );
+  const repairedParsed = parseJsonLoose<T>(repaired);
+  if (!repairedParsed) throw new Error(`${passId} returned invalid JSON and repair failed`);
+  return repairedParsed;
+}
+
 async function main() {
   const idArg = process.argv[2];
   if (!idArg || idArg.startsWith("--")) {
@@ -88,6 +115,7 @@ async function main() {
   const bible = fs.readFileSync(path.join(BLUEPRINTS, "00-series-bible.md"), "utf8");
   const outDir = path.join(OUT, bp.id);
   fs.mkdirSync(outDir, { recursive: true });
+  ensureRunManifest(outDir, bp);
   const showrunnerPacket = buildShowrunnerMemoryPacket({ blueprint: bp });
   const referenceAssetBlock = buildReferenceAssetPromptBlock();
   const countryCharacterBlock = buildCountryCastPromptBlock();
@@ -112,8 +140,17 @@ async function main() {
 
   for (let i = from; i <= to; i++) {
     const pass = PASSES[i - 1];
+    const stageId = `script:${pass.id}`;
     const t0 = Date.now();
     process.stdout.write(`   [${i}/${PASSES.length}] ${pass.name.padEnd(20)} `);
+    beginRunStage(outDir, {
+      id: stageId,
+      kind: pass.id === "compile" ? "compile" : pass.id === "frames" ? "frames" : "script",
+      label: `${i}. ${pass.name}`,
+      model: activeModel(),
+      command: ["npm", "run", "trailer:script", "--", bp.id, "--only", pass.id],
+      outputFiles: [path.basename(fileFor(i))],
+    });
     try {
       const out = await callLLM(pass.build(prev, {
         bible,
@@ -130,8 +167,8 @@ async function main() {
       });
       if (pass.kind === "json" && pass.id === "frames") {
         // FRAMES pass: enrich the existing scenes.json with frame plans + the LOOK block.
-        const parsed = parseJsonLoose<any>(out);
-        if (!parsed || !Array.isArray(parsed.sequences)) throw new Error("frames returned no sequences[]");
+        const parsed = await parseJsonOrRepair<any>(out, pass.id);
+        if (!Array.isArray(parsed.sequences)) throw new Error("frames returned no sequences[]");
         const scenesPath = path.join(outDir, "scenes.json");
         if (!fs.existsSync(scenesPath)) throw new Error("frames pass needs scenes.json — run the compile pass first.");
         const screenplay: Screenplay = JSON.parse(fs.readFileSync(scenesPath, "utf8"));
@@ -149,12 +186,16 @@ async function main() {
         fs.writeFileSync(scenesPath, JSON.stringify(screenplay, null, 2));
         writeDraftCanonSidecar(screenplay, outDir);
         fs.writeFileSync(fileFor(i), "```json\n" + JSON.stringify(parsed, null, 2) + "\n```");
+        registerRunArtifact(outDir, { kind: "json", label: "Frame pass output", path: path.basename(fileFor(i)) });
+        registerRunArtifact(outDir, { kind: "json", label: "Seedance-ready scenes", path: "scenes.json" });
+        refreshRunManifestFromScreenplay(outDir, screenplay, { llmCalls: i });
+        completeRunStage(outDir, stageId, { outputFiles: [path.basename(fileFor(i)), "scenes.json", "subtitles.srt", "subtitles.vtt"] });
         console.log(`✓ ${((Date.now() - t0) / 1000).toFixed(1)}s — ${starts} start frames, ${ends} end frames, look ${screenplay.look ? "set" : "MISSING"} → scenes.json`);
       } else if (pass.kind === "json") {
         // COMPILE pass: build the sequence-based scenes.json.
-        const parsed = parseJsonLoose<any>(out);
+        const parsed = await parseJsonOrRepair<any>(out, pass.id);
         const sequences = parsed?.sequences;
-        if (!parsed || !Array.isArray(sequences) || sequences.length === 0) throw new Error("compile returned no sequences[]");
+        if (!Array.isArray(sequences) || sequences.length === 0) throw new Error("compile returned no sequences[]");
         // Flattened per-shot view (assembly/captions + legacy renderer compatibility).
         const shots = sequences.flatMap((q: any, qi: number) =>
           (Array.isArray(q.shots) ? q.shots : []).map((sh: any) => ({
@@ -180,15 +221,22 @@ async function main() {
         fs.writeFileSync(path.join(outDir, "scenes.json"), JSON.stringify(screenplay, null, 2));
         writeDraftCanonSidecar(screenplay, outDir);
         fs.writeFileSync(fileFor(i), "```json\n" + JSON.stringify(screenplay, null, 2) + "\n```");
+        registerRunArtifact(outDir, { kind: "json", label: "Compile pass output", path: path.basename(fileFor(i)) });
+        registerRunArtifact(outDir, { kind: "json", label: "Seedance-ready scenes", path: "scenes.json" });
+        refreshRunManifestFromScreenplay(outDir, screenplay, { llmCalls: i });
+        completeRunStage(outDir, stageId, { outputFiles: [path.basename(fileFor(i)), "scenes.json", "subtitles.srt", "subtitles.vtt"] });
         prev = JSON.stringify(screenplay, null, 2); // feed the frames pass
         console.log(`✓ ${((Date.now() - t0) / 1000).toFixed(1)}s — ${sequences.length} sequences / ${shots.length} shots, ~${screenplay.totalSeconds}s → scenes.json`);
       } else {
         applyLint(pass.id, lintText(pass.id, out, bp, SEEDANCE_MAX));
         fs.writeFileSync(fileFor(i), out);
+        registerRunArtifact(outDir, { kind: "script", label: `${i}. ${pass.name}`, path: path.basename(fileFor(i)) });
+        completeRunStage(outDir, stageId, { outputFiles: [path.basename(fileFor(i))] });
         prev = out;
         console.log(`✓ ${((Date.now() - t0) / 1000).toFixed(1)}s → ${path.basename(fileFor(i))}`);
       }
     } catch (e: any) {
+      failRunStage(outDir, stageId, e);
       console.log(`✗ ${e?.message || e}`);
       throw e;
     }

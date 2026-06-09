@@ -2,6 +2,8 @@ import "server-only";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import type { RunManifest } from "./types";
+import { analyzeScreenplayDialogue } from "../../src/content-engine/dialogueQuality";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -67,7 +69,9 @@ export interface DialogueHealthLine {
   seconds: number;
   wordCount: number;
   minWords: number;
+  maxWords: number;
   estimatedSeconds: number;
+  occupancyPct: number;
   flags: string[];
 }
 
@@ -77,6 +81,9 @@ export interface DialogueHealth {
   avgWords: number;
   flaggedCount: number;
   score: number;
+  spokenSeconds: number;
+  availableSeconds: number;
+  occupancyPct: number;
   lines: DialogueHealthLine[];
 }
 
@@ -91,6 +98,7 @@ export interface FrameHealth {
 
 export interface RunDetail extends RunSummary {
   allFiles: string[];
+  manifest: RunManifest | null;
   scenesSummary: null | {
     totalSeconds: number;
     sequenceCount: number;
@@ -239,73 +247,8 @@ export function saveBlueprintDocument(input: BlueprintSaveInput, options: { crea
   return getBlueprintDocument(id);
 }
 
-function words(text: string): string[] {
-  return String(text || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim().split(" ").filter(Boolean);
-}
-
-function minDialogueWordsForSlot(seconds: number): number {
-  if (seconds < 3) return 0;
-  if (seconds < 5) return 4;
-  return Math.ceil(Math.max(0, seconds - 1.4) * 2.3 * 0.62);
-}
-
-const dialogueSmells: Array<[RegExp, string]> = [
-  [/^\s*(slow|sealed|yield|faster|mine|locked)\s*[.!?]?\s*$/i, "single-word prop label"],
-  [/\bno yield\b/i, "mechanic phrase"],
-  [/\bno pulse\b/i, "mechanic phrase"],
-  [/\bscreensaver\b/i, "try-hard tech joke"],
-  [/\bvelvet rope\b/i, "launch metaphor"],
-  [/\bfounder'?s table\b/i, "launch metaphor"],
-  [/\bpick up a pickaxe\b/i, "tutorial phrase"],
-  [/\bearn the signal\b/i, "abstract trailer phrase"],
-  [/\bfair launch\b/i, "mechanic phrase"],
-  [/\bpre[- ]?mine\b/i, "mechanic phrase"],
-  [/\binsiders?\b/i, "mechanic phrase"],
-  [/\bemissions?\b/i, "mechanic phrase"],
-  [/\b4[- ]?hour\b/i, "mechanic phrase"],
-  [/\bleaderboard\b/i, "UI/mechanic phrase"],
-  [/\brevolutionary|cutting edge|game changing|seamless|paradigm|world class/i, "pitch-deck smell"],
-];
-
 function analyzeDialogue(scenes: any): DialogueHealth {
-  const lines: DialogueHealthLine[] = [];
-  for (const seq of scenes?.sequences || []) {
-    for (const shot of seq.shots || []) {
-      const seconds = Math.max(0, Number(shot.endSec || 0) - Number(shot.startSec || 0));
-      for (const line of shot.dialogue || []) {
-        const text = String(line.line || "");
-        const wordCount = words(text).length;
-        const minWords = minDialogueWordsForSlot(seconds);
-        const estimatedSeconds = wordCount / 2.3 + 0.5;
-        const flags = dialogueSmells.filter(([pattern]) => pattern.test(text)).map(([, reason]) => reason);
-        if (wordCount > 0 && wordCount < minWords) flags.push(`too short for ${seconds.toFixed(1)}s slot`);
-        if (estimatedSeconds > seconds + 0.5) flags.push(`may not fit ${seconds.toFixed(1)}s slot`);
-        lines.push({
-          sequence: seq.n,
-          shot: shot.n,
-          speaker: String(line.speaker || ""),
-          line: text,
-          delivery: line.delivery,
-          seconds,
-          wordCount,
-          minWords,
-          estimatedSeconds: Number(estimatedSeconds.toFixed(1)),
-          flags,
-        });
-      }
-    }
-  }
-
-  const totalWords = lines.reduce((sum, line) => sum + line.wordCount, 0);
-  const flagged = lines.filter((line) => line.flags.length > 0);
-  return {
-    lineCount: lines.length,
-    totalWords,
-    avgWords: lines.length ? Number((totalWords / lines.length).toFixed(1)) : 0,
-    flaggedCount: flagged.length,
-    score: lines.length ? Math.max(0, Math.round(100 - (flagged.length / lines.length) * 45)) : 100,
-    lines,
-  };
+  return analyzeScreenplayDialogue(scenes);
 }
 
 function summarizeFrames(scenes: any): FrameHealth {
@@ -324,15 +267,39 @@ function summarizeFrames(scenes: any): FrameHealth {
 }
 
 function runUpdatedAt(runDir: string): string {
-  const files = fs.existsSync(runDir) ? fs.readdirSync(runDir) : [];
+  const files = fs.existsSync(runDir) ? listFilesRecursive(runDir) : [];
   const times = files.map((file) => fs.statSync(path.join(runDir, file)).mtimeMs);
   return new Date(times.length ? Math.max(...times) : fs.statSync(runDir).mtimeMs).toISOString();
+}
+
+function listFilesRecursive(dir: string, root = dir): string[] {
+  if (!fs.existsSync(dir)) return [];
+  const out: string[] = [];
+  for (const entry of fs.readdirSync(dir).sort()) {
+    if (entry === ".DS_Store") continue;
+    const abs = path.join(dir, entry);
+    const stat = fs.statSync(abs);
+    if (stat.isDirectory()) out.push(...listFilesRecursive(abs, root));
+    else out.push(path.relative(root, abs).replace(/\\/g, "/"));
+  }
+  return out;
+}
+
+function readRunManifest(runDir: string): RunManifest | null {
+  const file = path.join(runDir, "run-manifest.json");
+  if (!fs.existsSync(file)) return null;
+  try {
+    return JSON.parse(fs.readFileSync(file, "utf8")) as RunManifest;
+  } catch {
+    return null;
+  }
 }
 
 export function listRuns(activeJobsByBlueprint = new Map<string, string[]>()): RunSummary[] {
   if (!fs.existsSync(OUT_DIR)) return [];
   return fs.readdirSync(OUT_DIR)
     .filter((entry) => {
+      if (entry.startsWith(".")) return false;
       const abs = path.join(OUT_DIR, entry);
       return fs.statSync(abs).isDirectory();
     })
@@ -340,8 +307,9 @@ export function listRuns(activeJobsByBlueprint = new Map<string, string[]>()): R
     .map((id) => {
       const runDir = path.join(OUT_DIR, id);
       const files = fs.readdirSync(runDir).sort();
+      const allFiles = listFilesRecursive(runDir);
       const passFiles = PASS_FILES.filter((file) => files.includes(file));
-      const videos = files.filter((file) => VIDEO_EXTENSIONS.has(path.extname(file).toLowerCase()));
+      const videos = allFiles.filter((file) => VIDEO_EXTENSIONS.has(path.extname(file).toLowerCase()));
       const hasScenes = files.includes("scenes.json");
       const activeJobs = activeJobsByBlueprint.get(id) || [];
       let scenes: any | undefined;
@@ -353,7 +321,7 @@ export function listRuns(activeJobsByBlueprint = new Map<string, string[]>()): R
       const status: RunSummary["status"] = activeJobs.length ? "running" : hasScenes ? "ready" : passFiles.length ? "partial" : "empty";
       return {
         id,
-        title: scenes?.title || blueprintById(id)?.title || id,
+        title: readRunManifest(runDir)?.title || scenes?.title || blueprintById(id)?.title || id,
         updatedAt: runUpdatedAt(runDir),
         passFiles,
         passCount: passFiles.length,
@@ -373,8 +341,10 @@ export function getRunDetail(id: string, activeJobsByBlueprint = new Map<string,
   if (!fs.existsSync(runDir) || !fs.statSync(runDir).isDirectory()) throw new Error("Run not found");
 
   const files = fs.readdirSync(runDir).sort();
+  const allFiles = listFilesRecursive(runDir);
   const passFiles = PASS_FILES.filter((file) => files.includes(file));
-  const videos = files.filter((file) => VIDEO_EXTENSIONS.has(path.extname(file).toLowerCase()));
+  const videos = allFiles.filter((file) => VIDEO_EXTENSIONS.has(path.extname(file).toLowerCase()));
+  const manifest = readRunManifest(runDir);
   let scenes: any | undefined;
   if (files.includes("scenes.json")) scenes = JSON.parse(fs.readFileSync(path.join(runDir, "scenes.json"), "utf8"));
 
@@ -392,7 +362,8 @@ export function getRunDetail(id: string, activeJobsByBlueprint = new Map<string,
 
   return {
     ...summary,
-    allFiles: files,
+    allFiles,
+    manifest,
     scenesSummary: scenes ? {
       totalSeconds: scenes.totalSeconds,
       sequenceCount: scenes.sequences?.length || 0,
@@ -416,7 +387,7 @@ export function getRunDetail(id: string, activeJobsByBlueprint = new Map<string,
 }
 
 export function readRunFile(id: string, file: string): string {
-  if (!file || path.basename(file) !== file || !/\.(md|json)$/.test(file)) throw new Error("Bad file name");
+  if (!file || path.basename(file) !== file || !/\.(md|json|srt|vtt|txt)$/.test(file)) throw new Error("Bad file name");
   const filePath = safeResolve(safeResolve(OUT_DIR, id), file);
   return fs.readFileSync(filePath, "utf8");
 }
@@ -426,9 +397,18 @@ export function getRunMediaPath(id: string, file: string): string {
   return safeResolve(safeResolve(OUT_DIR, id), file);
 }
 
+export function getRunArtifactPath(id: string, parts: string[]): string {
+  const rel = parts.join("/");
+  if (!rel || rel.includes("..")) throw new Error("Bad artifact path");
+  const ext = path.extname(rel).toLowerCase();
+  const allowed = new Set([".png", ".jpg", ".jpeg", ".webp", ".gif", ".mp4", ".mov", ".webm", ".mp3", ".wav", ".srt", ".vtt", ".json", ".md", ".txt"]);
+  if (!allowed.has(ext)) throw new Error("Artifact type not allowed");
+  return safeResolve(safeResolve(OUT_DIR, id), rel);
+}
+
 export function getWhitelistedAssetPath(parts: string[]): string {
   const rel = parts.join("/");
-  if (!rel.startsWith("trailer/assets/reference/") && !rel.startsWith("src/assets/brand/")) {
+  if (!rel.startsWith("trailer/assets/reference/") && !rel.startsWith("trailer/reference/") && !rel.startsWith("src/assets/brand/")) {
     throw new Error("Asset path not allowed");
   }
   return safeResolve(REPO_ROOT, rel);

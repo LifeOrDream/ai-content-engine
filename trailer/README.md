@@ -44,6 +44,8 @@ trailer/
     01-engagement.md .. 06-frames.md
     scenes.json             ← FINAL Seedance-ready sequence list
     canon-draft.json        ← draft-only continuity proposal
+    run-manifest.json       ← stage timeline, refs, artifacts, cost estimate, FAL request IDs
+    subtitles.srt/.vtt      ← YouTube/WebVTT subtitle exports
 ```
 
 ## Run
@@ -65,6 +67,8 @@ TRAILER_LLM_MODEL=gemini-2.5-pro npx tsx trailer/pipeline/run.ts 01
 
 Each pass writes `out/<id>/NN-<pass>.md` so you can read the script get better stage by stage and **finalize by hand** at any point (edit a `NN-*.md`, then `--from N+1` to continue from your edit). The final `scenes.json` is the Seedance-ready shot list.
 
+Each run also updates `out/<id>/run-manifest.json`. The manifest records pass stages, generated subtitle exports, reference assets, rough cost estimates, generated frame/video artifacts, and FAL request IDs once renders begin. This is the audit trail the WebUI reads.
+
 ## The 7 launch videos (countdown-driven)
 
 01 Bitcoin is dying (24h) → 02 America always wins (18h) → 03 War room (12h) → 04 Will you remember us (6h) → 05 Counted us out (3h) → 06 Whose side are you on (0:30) → 07 It's live (0:00).
@@ -82,9 +86,12 @@ npx tsx trailer/generate/run.ts 01 --approve --tg
 
 npx tsx trailer/generate/run.ts 01 --from 3       # resume from scene 3
 npx tsx trailer/generate/run.ts 01 --only 5 --regen   # re-render just scene 5
+npx tsx trailer/generate/run.ts 01 --only 5 --regen --no-assemble   # cheapest one-clip iteration
 ```
 
 The **boolean** you asked for: `--approve` (or `TRAILER_APPROVE_PER_SCENE=true`) → after each sequence it waits on `[enter]=approve · r=regenerate · s=stop`; without it, it renders all sequences and assembles the full video. Either way sequences are saved to `out/<id>/sequences/seq_NN.mp4` (resumable — a re-run reuses existing clips unless `--regen` is passed).
+
+The local WebUI (`npm run webui`) exposes the same commands with two job modes: script passes and production render. Use “Only sequence” for cheap clip-by-clip review, then full render + assemble once the frames/dialogue are approved.
 
 ## Canonize after posting
 

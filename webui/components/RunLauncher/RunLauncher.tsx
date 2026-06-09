@@ -29,6 +29,10 @@ export function RunLauncher({
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [only, setOnly] = useState("");
+  const [renderFrom, setRenderFrom] = useState("");
+  const [renderOnly, setRenderOnly] = useState("");
+  const [renderRegen, setRenderRegen] = useState(false);
+  const [renderAssemble, setRenderAssemble] = useState(true);
   const [editorMode, setEditorMode] = useState<"create" | "edit" | null>(null);
   const [error, setError] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -57,6 +61,31 @@ export function RunLauncher({
         });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || "Could not start job");
+        onJobStarted(data.job);
+      } catch (runError: any) {
+        setError(runError?.message || String(runError));
+      }
+    });
+  }
+
+  function runRenderPipeline() {
+    setError("");
+    startTransition(async () => {
+      try {
+        const response = await fetch("/api/runs", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            mode: "render",
+            blueprintId,
+            only: renderOnly ? Number(renderOnly) : undefined,
+            from: !renderOnly && renderFrom ? Number(renderFrom) : undefined,
+            regen: renderRegen,
+            assemble: renderAssemble,
+          }),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Could not start render job");
         onJobStarted(data.job);
       } catch (runError: any) {
         setError(runError?.message || String(runError));
@@ -146,6 +175,50 @@ export function RunLauncher({
 
       <p className={styles.note}>
         Runs <code>npm run trailer:script</code> and writes the normal <code>trailer/out/&lt;id&gt;</code> pass artifacts.
+      </p>
+
+      <div className={styles.headingRowCompact}>
+        <h2>Production render</h2>
+        <span>Seedance</span>
+      </div>
+
+      <div className={styles.split}>
+        <label className={styles.field}>
+          <span>From sequence</span>
+          <input
+            value={renderFrom}
+            onChange={(event) => setRenderFrom(event.target.value.replace(/\D/g, ""))}
+            placeholder="1"
+            disabled={Boolean(renderOnly)}
+          />
+        </label>
+
+        <label className={styles.field}>
+          <span>Only sequence</span>
+          <input
+            value={renderOnly}
+            onChange={(event) => setRenderOnly(event.target.value.replace(/\D/g, ""))}
+            placeholder="e.g. 3"
+          />
+        </label>
+      </div>
+
+      <label className={styles.checkRow}>
+        <input type="checkbox" checked={renderRegen} onChange={(event) => setRenderRegen(event.target.checked)} />
+        <span>Regenerate cached frames/clips</span>
+      </label>
+
+      <label className={styles.checkRow}>
+        <input type="checkbox" checked={renderAssemble} onChange={(event) => setRenderAssemble(event.target.checked)} />
+        <span>Assemble final trailer after render</span>
+      </label>
+
+      <button className={styles.renderButton} onClick={runRenderPipeline} disabled={!blueprintId || isPending}>
+        {isPending ? "Starting..." : "Render video from scenes.json"}
+      </button>
+
+      <p className={styles.note}>
+        Runs <code>npm run trailer:generate</code>. Use “Only sequence” for cheap one-clip iteration, then full render when approved.
       </p>
       {error ? <p className={styles.error}>{error}</p> : null}
       {editorMode ? (

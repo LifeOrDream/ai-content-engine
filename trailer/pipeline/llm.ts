@@ -17,6 +17,10 @@
  * callLLM, so one env change re-routes the whole pipeline.
  */
 import "dotenv/config";
+import {
+  assertUsefulLLMText,
+  parseJsonLoose as parseJsonLooseShared,
+} from "../../src/content-engine/llmText.js";
 
 const FAL_KEY = process.env.FAL_API_KEY || "";
 const GEMINI_KEY = process.env.GEMINI_KEY || "";
@@ -36,8 +40,7 @@ export function activeModel(): string {
 /** One LLM call. Higher temperature for the creative passes; lower for the precision/JSON passes. */
 export async function callLLM(prompt: string, opts: { temperature?: number; json?: boolean } = {}): Promise<string> {
   const text = PROVIDER === "fal" ? await callFal(prompt, opts) : await callGemini(prompt, opts);
-  if (!text || !String(text).trim()) throw new Error("LLM returned empty text");
-  return String(text);
+  return assertUsefulLLMText(text, { mode: opts.json ? "json" : "text" });
 }
 
 // ── fal.ai openrouter/router (queue API: submit → poll → result) ────────────
@@ -102,20 +105,5 @@ async function callGemini(prompt: string, opts: { temperature?: number; json?: b
 
 /** Strip ``` fences / grab the outermost {...} for the JSON passes. */
 export function parseJsonLoose<T>(raw: string): T | null {
-  const cleaned = raw.replace(/^```(?:json)?/i, "").replace(/```$/i, "").trim();
-  try {
-    return JSON.parse(cleaned) as T;
-  } catch {
-    /* fall through */
-  }
-  const s = cleaned.indexOf("{"),
-    e = cleaned.lastIndexOf("}");
-  if (s >= 0 && e > s) {
-    try {
-      return JSON.parse(cleaned.slice(s, e + 1)) as T;
-    } catch {
-      return null;
-    }
-  }
-  return null;
+  return parseJsonLooseShared<T>(raw);
 }
