@@ -13,7 +13,8 @@
     "dist",
     "trailer",
     "scripts",
-    "src/assets/brand/brand_badge.png"
+    "src/assets/brand/brand_badge.png",
+    "src/assets/brand/minebtc-wordmark.png"
   ],
   "scripts": {
     "build": "tsc",
