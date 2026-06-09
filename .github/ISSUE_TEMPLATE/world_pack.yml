@@ -1,0 +1,44 @@
+name: World pack proposal
+description: Propose a character, faction, country, location, or lore improvement.
+title: "[World Pack]: "
+labels:
+  - "area: world-pack"
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What world-pack improvement are you proposing?
+    validations:
+      required: true
+  - type: dropdown
+    id: pack_type
+    attributes:
+      label: Type
+      options:
+        - character
+        - location
+        - country/faction
+        - visual bible
+        - voice profile
+        - story arc
+        - fixture
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+      description: Include canon, visual details, personality, micro-details, and what outputs this should improve.
+    validations:
+      required: true
+  - type: textarea
+    id: proof
+    attributes:
+      label: Proof or examples
+      description: Optional reference prompts, generated images, videos, or comparable scenes.
+  - type: textarea
+    id: risks
+    attributes:
+      label: Risks
+      description: Cultural, brand, consistency, or safety concerns reviewers should consider.

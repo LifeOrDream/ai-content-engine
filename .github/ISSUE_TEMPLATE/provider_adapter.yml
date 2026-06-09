@@ -1,0 +1,46 @@
+name: Provider adapter request
+description: Request or propose an image, video, voice, music, lip-sync, storage, or delivery adapter.
+title: "[Provider]: "
+labels:
+  - "area: providers"
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What provider or adapter should be added or improved?
+    validations:
+      required: true
+  - type: dropdown
+    id: provider_type
+    attributes:
+      label: Provider type
+      options:
+        - LLM/script
+        - image
+        - video
+        - speech
+        - music/SFX
+        - lip-sync
+        - storage
+        - delivery
+        - other
+    validations:
+      required: true
+  - type: textarea
+    id: api_shape
+    attributes:
+      label: API shape
+      description: Link docs, describe inputs/outputs, and note auth/cost/rate-limit constraints.
+  - type: textarea
+    id: use_case
+    attributes:
+      label: Use case
+      description: Which pipeline stage improves and why?
+    validations:
+      required: true
+  - type: textarea
+    id: proof
+    attributes:
+      label: Proof or sample output
+      description: Optional sample request/response or generated media.

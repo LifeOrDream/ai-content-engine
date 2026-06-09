@@ -1,0 +1,49 @@
+"area: core-engine":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/content-engine/**"
+
+"area: service-worker":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/service/**"
+
+"area: trailer-pipeline":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "trailer/pipeline/**"
+          - "trailer/generate/**"
+          - "trailer/blueprints/**"
+
+"area: world-pack":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "trailer/world/**"
+          - "trailer/reference/**"
+          - "src/prompts/**"
+
+"area: providers":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/utils/**"
+          - "src/services/**"
+
+"area: docs":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "README.md"
+          - "docs/**"
+          - "CONTRIBUTING.md"
+          - "SECURITY.md"
+          - "CODE_OF_CONDUCT.md"
+
+"area: automation":
+  - changed-files:
+      - any-glob-to-any-file:
+          - ".github/**"
+
+"area: evals":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "scripts/**"
+          - "examples/**"

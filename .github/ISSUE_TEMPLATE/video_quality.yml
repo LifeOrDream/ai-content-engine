@@ -1,0 +1,45 @@
+name: Video quality issue
+description: Report a generated clip problem such as motion, lip-sync, pacing, aspect ratio, or artifacts.
+title: "[Video Quality]: "
+labels:
+  - "area: video"
+  - "proof: needed"
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: One sentence describing the clip issue.
+    validations:
+      required: true
+  - type: textarea
+    id: clip
+    attributes:
+      label: Clip or frame evidence
+      description: Link or attach the generated output. Redact private URLs if needed.
+    validations:
+      required: true
+  - type: textarea
+    id: generation_context
+    attributes:
+      label: Generation context
+      description: Scene id, model/provider, command, prompt packet, refs, aspect ratio, and duration.
+      render: shell
+  - type: checkboxes
+    id: categories
+    attributes:
+      label: Quality categories affected
+      options:
+        - label: Character consistency
+        - label: Brand fit
+        - label: Dialogue
+        - label: Motion/camera
+        - label: Lip-sync
+        - label: Pacing
+        - label: Aspect/crop safety
+        - label: Visual artifacts
+  - type: textarea
+    id: scorecard
+    attributes:
+      label: Quality scorecard
+      description: Score affected categories 1-5 and explain briefly.

@@ -1,0 +1,48 @@
+name: Prompt quality issue
+description: Report a prompt, dialogue, keyframe, or director-grammar quality problem.
+title: "[Prompt Quality]: "
+labels:
+  - "area: prompts"
+  - "proof: needed"
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What output quality issue are you seeing?
+      placeholder: Character identity drifts when the prompt includes a war-room screen and a rival faction.
+    validations:
+      required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Surface
+      options:
+        - screenplay
+        - dialogue
+        - keyframe prompt
+        - video motion prompt
+        - director grammar
+        - negative prompt
+        - character canon
+        - other
+    validations:
+      required: true
+  - type: textarea
+    id: prompt_packet
+    attributes:
+      label: Prompt packet or fixture
+      description: Paste the relevant prompt packet, fixture, or command. Redact secrets.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: media_proof
+    attributes:
+      label: Media proof
+      description: Add image/video links, screenshots, request ids, or before/after evidence.
+  - type: textarea
+    id: proposed_fix
+    attributes:
+      label: Proposed fix
+      description: If you know the likely prompt direction, describe it.

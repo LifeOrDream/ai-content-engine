@@ -18,6 +18,8 @@
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
+    "demo:fixture": "tsx scripts/demo_fixture.ts",
+    "check:oss": "npm run typecheck && npm run demo:fixture",
     "service:worker": "tsx src/service/worker.ts",
     "trailer:script": "tsx trailer/pipeline/run.ts",
     "trailer:canonize": "tsx trailer/pipeline/canonize.ts",

@@ -1,0 +1,11 @@
+# Default owner for now. Add teams as the repo grows.
+* @SunshineRider
+
+# Prompt/style canon needs owner review.
+/trailer/blueprints/ @SunshineRider
+/trailer/style/ @SunshineRider
+/src/content-engine/ @SunshineRider
+
+# GitHub automation and security docs need owner review.
+/.github/ @SunshineRider
+/SECURITY.md @SunshineRider
