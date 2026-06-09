@@ -1,0 +1,76 @@
+{
+  "country": "USA",
+  "factionId": 0,
+  "breedCanon": [
+    "Golden Retriever",
+    "Husky",
+    "Corgi",
+    "Australian Shepherd"
+  ],
+  "styleDirection": "Evolved/unlocked MineBTC trailer-tier HashBeasts and grounded magical show environments: high-resolution 2D arcade-cel with pixel-art DNA, bright cover-pic lighting, readable breed silhouettes, country-specific gear, real scene staging, subtle physical magic through props/architecture, no floating cube spam, no generic game-state backgrounds, no photorealism, no generic 3D, no non-canon breeds.",
+  "characters": [
+    {
+      "id": "usa_golden_retriever_supreme_commander",
+      "breed": "Golden Retriever",
+      "role": "Supreme Commander / Pentagon Battle Mage",
+      "path": "characters/usa_golden_retriever_supreme_commander.png"
+    },
+    {
+      "id": "usa_husky_cyber_nasa_pilot",
+      "breed": "Husky",
+      "role": "Cyber/NASA Battle Pilot",
+      "path": "characters/usa_husky_cyber_nasa_pilot.png"
+    },
+    {
+      "id": "usa_corgi_degen_fed_sorcerer",
+      "breed": "Corgi",
+      "role": "Degen Fed / Wall Street Sorcerer",
+      "path": "characters/usa_corgi_degen_fed_sorcerer.png"
+    },
+    {
+      "id": "usa_australian_shepherd_wand_tech_enchanter",
+      "breed": "Australian Shepherd",
+      "role": "Wand-Tech Entrepreneur / Hollywood Enchanter",
+      "path": "characters/usa_australian_shepherd_wand_tech_enchanter.png"
+    }
+  ],
+  "environments": [
+    {
+      "id": "usa_command_plaza_war_room",
+      "use": "Faction reveal, commander entrance, war briefing, heroic lineup",
+      "path": "environments/usa_command_plaza_war_room.png"
+    },
+    {
+      "id": "usa_degen_fed_emissions_chamber",
+      "use": "Dynamic emissions satire, degen Fed hearings, treasury/market panic",
+      "path": "environments/v2_grounded_magic/usa_degen_fed_emissions_chamber_grounded_magic.png"
+    },
+    {
+      "id": "usa_wall_street_sorcery_trading_floor",
+      "use": "Market collapse satire, finance wizard spells, panic/reaction chains",
+      "path": "environments/v2_grounded_magic/usa_wall_street_sorcery_hall_grounded_magic.png"
+    },
+    {
+      "id": "usa_wand_tech_garage_lab",
+      "use": "Wand-tech invention, AI/content pipeline scenes, power mutation upgrade",
+      "path": "environments/v2_grounded_magic/usa_wand_tech_garage_lab_grounded_magic.png"
+    },
+    {
+      "id": "usa_late_night_diner_broadcast_booth",
+      "use": "Ordinary-life comedy, sincere survival talks, recruitment/confessional beats",
+      "path": "environments/v2_grounded_magic/usa_late_night_diner_broadcast_booth_grounded_magic.png"
+    }
+  ],
+  "boards": [
+    {
+      "id": "usa_character_board_v2_actual_breeds_evolved",
+      "use": "Group-level evolved USA breed lineup approval board",
+      "path": "generated_approval/usa_character_board_v2_actual_breeds_evolved.png"
+    },
+    {
+      "id": "usa_power_gear_reference_board",
+      "use": "USA power equipment, evolution unlocks, prop/gear visual vocabulary",
+      "path": "boards/usa_power_gear_reference_board.png"
+    }
+  ]
+}

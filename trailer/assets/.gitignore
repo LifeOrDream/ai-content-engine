@@ -1,0 +1,5 @@
+# Drop a music bed (music.mp3) and an sfx/ library here (local, not committed).
+*
+!.gitignore
+!reference/
+!reference/**

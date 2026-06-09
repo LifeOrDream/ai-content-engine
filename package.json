@@ -1,0 +1,46 @@
+{
+  "name": "@lifeordream/minebtc-ai-content-engine",
+  "version": "0.1.0",
+  "description": "Open-source MineBTC AI content engine for HashBeast story, prompt, trailer, and video pipelines.",
+  "type": "module",
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
+  "exports": {
+    ".": "./dist/src/index.js",
+    "./content-engine": "./dist/src/content-engine/index.js"
+  },
+  "files": [
+    "dist",
+    "trailer",
+    "scripts",
+    "src/assets/brand/brand_badge.png"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "trailer:script": "tsx trailer/pipeline/run.ts",
+    "trailer:canonize": "tsx trailer/pipeline/canonize.ts",
+    "trailer:generate": "tsx trailer/generate/run.ts"
+  },
+  "keywords": [
+    "minebtc",
+    "hashbeasts",
+    "ai-content",
+    "trailers",
+    "story-engine"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1051.0",
+    "@google/genai": "^1.37.0",
+    "axios": "^1.16.1",
+    "chalk": "^5.6.2",
+    "date-fns": "^4.1.0",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.7",
+    "tsx": "^4.20.5",
+    "typescript": "^5.6.3"
+  }
+}

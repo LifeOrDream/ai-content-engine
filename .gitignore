@@ -70,6 +70,22 @@ web_modules/
 .env.*
 !.env.example
 
+# MineBTC local generation outputs and secrets
+.DS_Store
+logs/
+trailer/out/
+trailer/cast/*
+!trailer/cast/.gitignore
+trailer/assets/*
+!trailer/assets/.gitignore
+!trailer/assets/reference/
+!trailer/assets/reference/**
+*.mp4
+*.mov
+*.webm
+*.wav
+*.mp3
+
 # parcel-bundler cache (https://parceljs.org/)
 .cache
 .parcel-cache

@@ -1,0 +1,103 @@
+{
+  "version": 1,
+  "purpose": "Country-level trailer reference boards for evolved HashBeast characters and grounded MineBTC show environments.",
+  "styleDirection": "High-resolution 2D arcade-cel with pixel-art DNA, bright MineBTC key-art lighting, readable canonical breed silhouettes, country-specific production design, subtle physical magic, no floating cube spam, no generic game-state backgrounds, no photorealism, no generic 3D CGI.",
+  "countries": [
+    {
+      "country": "USA",
+      "factionId": 0,
+      "breedCanon": ["Golden Retriever", "Husky", "Corgi", "Australian Shepherd"],
+      "characterBoard": "usa/generated_approval/usa_character_board_v2_actual_breeds_evolved.png",
+      "environmentBoard": "usa/environments/usa_command_plaza_war_room.png",
+      "landscapeLuxuryEnvironmentBoard": "usa/boards/usa_landscape_luxury_environment_board.png"
+    },
+    {
+      "country": "China",
+      "factionId": 1,
+      "breedCanon": ["Chow Chow", "Shih Tzu", "Pekingese", "Chinese Crested"],
+      "characterBoard": "china/boards/china_character_board.png",
+      "environmentBoard": "china/boards/china_environment_board.png",
+      "landscapeLuxuryEnvironmentBoard": "china/boards/china_landscape_luxury_environment_board.png"
+    },
+    {
+      "country": "Russia",
+      "factionId": 2,
+      "breedCanon": ["Samoyed", "Borzoi", "Siberian Husky", "Yakutian Laika"],
+      "characterBoard": "russia/boards/russia_character_board.png",
+      "environmentBoard": "russia/boards/russia_environment_board.png",
+      "landscapeLuxuryEnvironmentBoard": "russia/boards/russia_landscape_luxury_environment_board.png"
+    },
+    {
+      "country": "India",
+      "factionId": 3,
+      "breedCanon": ["Indian Spitz", "Rajapalayam", "Indian Pariah", "Himalayan Sheepdog"],
+      "characterBoard": "india/boards/india_character_board.png",
+      "environmentBoard": "india/boards/india_environment_board.png",
+      "landscapeLuxuryEnvironmentBoard": "india/boards/india_landscape_luxury_environment_board.png"
+    },
+    {
+      "country": "Japan",
+      "factionId": 4,
+      "breedCanon": ["Shiba Inu", "Akita Inu", "Japanese Spitz", "Shikoku"],
+      "characterBoard": "japan/boards/japan_character_board.png",
+      "environmentBoard": "japan/boards/japan_environment_board.png",
+      "landscapeLuxuryEnvironmentBoard": "japan/boards/japan_landscape_luxury_environment_board.png"
+    },
+    {
+      "country": "South Korea",
+      "factionId": 5,
+      "breedCanon": ["Jindo", "Sapsali", "White Jindo", "Pungsan"],
+      "characterBoard": "south_korea/boards/south_korea_character_board.png",
+      "environmentBoard": "south_korea/boards/south_korea_environment_board.png",
+      "landscapeLuxuryEnvironmentBoard": "south_korea/boards/south_korea_landscape_luxury_environment_board.png"
+    },
+    {
+      "country": "Iran",
+      "factionId": 6,
+      "breedCanon": ["Persian Saluki", "Sarabi Mastiff", "Persian Shepherd", "Khalaj Greyhound"],
+      "characterBoard": "iran/boards/iran_character_board.png",
+      "environmentBoard": "iran/boards/iran_environment_board.png",
+      "landscapeLuxuryEnvironmentBoard": "iran/boards/iran_landscape_luxury_environment_board.png"
+    },
+    {
+      "country": "UK",
+      "factionId": 7,
+      "breedCanon": ["English Bulldog", "Pembroke Welsh Corgi", "Border Collie", "Jack Russell Terrier"],
+      "characterBoard": "uk/boards/uk_character_board.png",
+      "environmentBoard": "uk/boards/uk_environment_board.png",
+      "landscapeLuxuryEnvironmentBoard": "uk/boards/uk_landscape_luxury_environment_board.png"
+    },
+    {
+      "country": "North Korea",
+      "factionId": 8,
+      "breedCanon": ["Pungsan", "Dark Pungsan", "Northern Spitz", "Paektu Wolf-Dog"],
+      "characterBoard": "north_korea/boards/north_korea_character_board.png",
+      "environmentBoard": "north_korea/boards/north_korea_environment_board.png",
+      "landscapeLuxuryEnvironmentBoard": "north_korea/boards/north_korea_landscape_luxury_environment_board.png"
+    },
+    {
+      "country": "France",
+      "factionId": 9,
+      "breedCanon": ["French Bulldog", "Poodle", "Papillon", "Berger Picard"],
+      "characterBoard": "france/boards/france_character_board.png",
+      "environmentBoard": "france/boards/france_environment_board.png",
+      "landscapeLuxuryEnvironmentBoard": "france/boards/france_landscape_luxury_environment_board.png"
+    },
+    {
+      "country": "Brazil",
+      "factionId": 10,
+      "breedCanon": ["Fila Brasileiro", "Brazilian Terrier", "Brazilian Dogo", "Caramelo Vira-Lata"],
+      "characterBoard": "brazil/boards/brazil_character_board.png",
+      "environmentBoard": "brazil/boards/brazil_environment_board.png",
+      "landscapeLuxuryEnvironmentBoard": "brazil/boards/brazil_landscape_luxury_environment_board.png"
+    },
+    {
+      "country": "Israel",
+      "factionId": 11,
+      "breedCanon": ["Canaan Dog", "Baladi Dog", "Israel Pointer", "Negev Desert Dog"],
+      "characterBoard": "israel/boards/israel_character_board.png",
+      "environmentBoard": "israel/boards/israel_environment_board.png",
+      "landscapeLuxuryEnvironmentBoard": "israel/boards/israel_landscape_luxury_environment_board.png"
+    }
+  ]
+}
