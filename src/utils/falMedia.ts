@@ -271,7 +271,7 @@ export interface GeneratedMedia {
 export async function generateImageEdit(
   prompt: string,
   referenceImageUrl: string,
-  opts: { aspectRatio?: string; resolution?: "1K" | "2K" | "4K" } = {},
+  opts: { aspectRatio?: string; resolution?: "1K" | "2K" | "4K"; model?: string } = {},
 ): Promise<GeneratedMedia> {
   const referenceBase64 = await imageUrlToBase64DataUri(referenceImageUrl);
   return generateImageEditFromDataUris(prompt, [referenceBase64], opts);
@@ -286,7 +286,7 @@ export async function generateImageEdit(
 export async function generateImageEditFromBuffers(
   prompt: string,
   refs: Array<{ buffer: Buffer; mime?: string }>,
-  opts: { aspectRatio?: string; resolution?: "1K" | "2K" | "4K" } = {},
+  opts: { aspectRatio?: string; resolution?: "1K" | "2K" | "4K"; model?: string } = {},
 ): Promise<GeneratedMedia> {
   const dataUris = refs.map(
     (r) =>
@@ -298,10 +298,11 @@ export async function generateImageEditFromBuffers(
 async function generateImageEditFromDataUris(
   prompt: string,
   imageDataUris: string[],
-  opts: { aspectRatio?: string; resolution?: "1K" | "2K" | "4K" } = {},
+  opts: { aspectRatio?: string; resolution?: "1K" | "2K" | "4K"; model?: string } = {},
 ): Promise<GeneratedMedia> {
+  const imageModel = opts.model || FAL_IMAGE_MODEL;
   const data = await falRun(
-    FAL_IMAGE_MODEL,
+    imageModel,
     {
       prompt,
       num_images: 1,
@@ -319,7 +320,7 @@ async function generateImageEditFromDataUris(
   return {
     url,
     buffer: await fetchAsBuffer(url),
-    model: meta?.model || FAL_IMAGE_MODEL,
+    model: meta?.model || imageModel,
     requestId: meta?.requestId,
   };
 }

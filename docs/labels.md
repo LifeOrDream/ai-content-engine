@@ -6,6 +6,7 @@ Labels are how we turn issues into a contributor operating system.
 
 - `area: core-engine` - pure prompt, screenplay, event planning, and canon primitives.
 - `area: service-worker` - Redis/BullMQ worker and service contracts.
+- `area: nft-pipeline` - mint art, state-loop APNGs, mutation clips, cycle recaps, and the APNG assembler.
 - `area: trailer-pipeline` - trailer script passes, generation, assembly, and canonization.
 - `area: prompts` - dialogue, keyframe, motion, negative prompt, and director grammar work.
 - `area: video` - image-to-video, lip-sync, pacing, crop safety, and artifact issues.

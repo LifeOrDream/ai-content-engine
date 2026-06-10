@@ -12,7 +12,11 @@ const worker = new Worker<ContentEngineJobPayload>(
   CONTENT_ENGINE_QUEUE,
   async (job) => {
     console.log(`[content-engine] ${job.name || job.data.kind} #${job.id}`);
-    return processContentEngineJob(job.data as ContentEngineJobPayload);
+    return processContentEngineJob(job.data as ContentEngineJobPayload, {
+      // Media jobs (nft.*) report per-stage progress; backends listen via
+      // QueueEvents("…").on("progress") and map stages to their own events.
+      onProgress: (update) => job.updateProgress(update),
+    });
   },
   { connection: connection as any, concurrency },
 );

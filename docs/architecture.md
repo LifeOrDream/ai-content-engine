@@ -26,9 +26,23 @@ flowchart TB
     J["Quality proof packet"]
   end
 
+  subgraph Nft["NFT asset pipeline (engine)"]
+    N1["DNA → prompt grammar<br/>faction × category × region × breed"]
+    N2["Mint art: full_body / dp / cinematic<br/>+ Gemini identity gate"]
+    N3["Chroma-strip state loops<br/>mining / win / lose APNG"]
+    N4["Mutation content<br/>transition clip + voiced line"]
+    N5["Cycle recap stitch (ffmpeg)"]
+    N6["Artifact store port<br/>S3 adapter or inline buffers"]
+  end
+
   A --> B --> Q
   Q --> D --> E --> F --> G --> H --> I --> J
   J --> C
+  Q --> N1 --> N2 --> N6
+  N1 --> N3 --> N6
+  N1 --> N4 --> N6
+  N4 --> N5 --> N6
+  N6 --> C
 ```
 
 ## Boundaries
@@ -36,9 +50,11 @@ flowchart TB
 Backend responsibilities:
 
 - Load live game/NFT/user/economy state.
-- Decide budgets, rate limits, and posting windows.
-- Persist draft and canon content.
-- Trigger the engine over Redis/BullMQ.
+- Decide budgets, rate limits, and posting windows (the economics gate runs BEFORE a job is enqueued).
+- Persist draft and canon content (DB rows, asset URLs, NFT metadata JSON, CDN invalidation).
+- Trigger the engine over Redis/BullMQ, with idempotent job ids.
+- Emit sockets/Telegram/socials from engine results and progress events.
+- Own per-cycle memory (which clips belong to a war cycle) and voice-id durability.
 - Own private infrastructure and production secrets.
 
 Content engine responsibilities:
@@ -48,6 +64,8 @@ Content engine responsibilities:
 - Write screenplays, scene scripts, frame plans, and motion prompts.
 - Track reusable world-pack and trailer definitions.
 - Produce prompt packets and proof metadata for generated media.
+- Run the NFT asset pipeline: DNA → mint art with identity validation, chroma-strip state loops, mutation transition clips + voiced lines, and cycle recap stitching ([docs/nft-pipeline.md](nft-pipeline.md)).
+- Hand generated media to the artifact store port (optional env-configured S3 adapter, or inline buffers in the job result) — never write game state.
 
 ## Design Principle
 
@@ -62,7 +80,7 @@ docker run -d -p 6379:6379 --name valkey valkey/valkey:alpine
 npm run service:worker
 ```
 
-The worker supports jobs such as:
+The worker supports fast creative jobs such as:
 
 - `plan_event`
 - `plan_pulse`
@@ -73,3 +91,12 @@ The worker supports jobs such as:
 - `build_director_prompt_block`
 - `build_negative_visual_prompt`
 - `build_video_motion_rules_block`
+
+And NFT asset pipeline media jobs (minutes, not seconds — dispatch them fire-and-forget and consume BullMQ progress/completed events instead of RPC-awaiting):
+
+- `nft.mint_assets`
+- `nft.state_animations`
+- `nft.mutation_content`
+- `nft.cycle_summary`
+
+See [docs/nft-pipeline.md](nft-pipeline.md) for inputs, outputs, and host requirements (python3 + Pillow/numpy/scipy for APNG assembly, ffmpeg for cycle recaps).
