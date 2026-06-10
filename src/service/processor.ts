@@ -21,6 +21,19 @@ import type {
   WriteSceneScriptResult,
 } from "./contracts.js";
 import { generateText, parseJsonLoose } from "./llm.js";
+import { generateMintAssets, type NftProgressFn } from "../nft-pipeline/mintAssets.js";
+import { generateStateAnimations } from "../nft-pipeline/stateAnimations.js";
+import { generateMutationContent } from "../nft-pipeline/mutationContent.js";
+import { generateCycleSummary } from "../nft-pipeline/cycleSummary.js";
+
+export interface ProcessJobOptions {
+  /**
+   * Stage progress hook for long-running media jobs — the worker wires this to
+   * BullMQ `job.updateProgress` so backends can react per phase (e.g. map
+   * `full_body` progress to their own socket events).
+   */
+  onProgress?: NftProgressFn;
+}
 
 function parseSceneScript(rawText: string): WriteSceneScriptResult | null {
   const parsed = parseJsonLoose<any>(rawText);
@@ -35,6 +48,7 @@ function parseSceneScript(rawText: string): WriteSceneScriptResult | null {
 
 export async function processContentEngineJob<K extends ContentEngineJobKind>(
   payload: ContentEngineJobPayload<K>,
+  opts: ProcessJobOptions = {},
 ): Promise<ContentEngineJobResultMap[K]> {
   switch (payload.kind) {
     case "plan_event": {
@@ -135,6 +149,24 @@ export async function processContentEngineJob<K extends ContentEngineJobKind>(
       return {
         text: buildVideoMotionRulesBlock(input.format || { aspectRatio: "9:16" }),
       } as ContentEngineJobResultMap[K];
+    }
+    case "nft.mint_assets": {
+      const input = payload.input as ContentEngineJobPayload<"nft.mint_assets">["input"];
+      return (await generateMintAssets(input, {
+        onProgress: opts.onProgress,
+      })) as ContentEngineJobResultMap[K];
+    }
+    case "nft.state_animations": {
+      const input = payload.input as ContentEngineJobPayload<"nft.state_animations">["input"];
+      return (await generateStateAnimations(input)) as ContentEngineJobResultMap[K];
+    }
+    case "nft.mutation_content": {
+      const input = payload.input as ContentEngineJobPayload<"nft.mutation_content">["input"];
+      return (await generateMutationContent(input)) as ContentEngineJobResultMap[K];
+    }
+    case "nft.cycle_summary": {
+      const input = payload.input as ContentEngineJobPayload<"nft.cycle_summary">["input"];
+      return (await generateCycleSummary(input)) as ContentEngineJobResultMap[K];
     }
     default:
       throw new Error(`Unknown content-engine job kind: ${(payload as any)?.kind}`);

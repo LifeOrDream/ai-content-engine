@@ -5,11 +5,12 @@ Start here if you are trying to understand or contribute to the open-source engi
 ## Read In This Order
 
 1. [Architecture](architecture.md)
-2. [Media Proof and Evals](evals-and-media-proof.md)
-3. [World Packs](world-packs.md)
-4. [Provider Adapters](provider-adapters.md)
-5. [Trailer Pipeline](../trailer/README.md)
-6. [Contributing](../CONTRIBUTING.md)
+2. [NFT Asset Pipeline](nft-pipeline.md)
+3. [Media Proof and Evals](evals-and-media-proof.md)
+4. [World Packs](world-packs.md)
+5. [Provider Adapters](provider-adapters.md)
+6. [Trailer Pipeline](../trailer/README.md)
+7. [Contributing](../CONTRIBUTING.md)
 
 ## Contributor Promise
 

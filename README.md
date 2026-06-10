@@ -48,9 +48,14 @@ It handles the creative layer:
 - Prompt grammar: director rules, camera/motion rules, negative prompts, model-safe style constraints.
 - Script pipeline: multi-pass trailer writing, dialogue refinement, scene direction, and frame planning.
 - Media generation: keyframe prompts, image/video/voice/lip-sync adapters, proof artifacts, and review loops.
+- NFT asset pipeline: mint art, living-sprite state loops, mutation clips, cycle recaps.
 - Service mode: Redis/BullMQ worker so the game backend can send content jobs without importing this repo as local backend code.
 
 MineBTC is the reference implementation, but the structure is intentionally portable. Any game with characters, events, factions, story state, and media outputs should be able to adapt the same pattern.
+
+## NFT Asset Pipeline
+
+Mint art, living-sprite state loops, mutation clips, cycle recaps. DNA becomes a faction × category × region × breed prompt; mint art is identity-gated by a Gemini vision check with bounded regens; mining/win/lose loops are generated as 5-frame chroma strips and assembled into transparent looping APNGs; mutation events get transition clips plus voiced one-liners; each war cycle stitches a per-beast recap MP4. Runs as `nft.*` jobs on the service worker, with persistence behind a storage port (optional S3 adapter or inline buffers). See [docs/nft-pipeline.md](docs/nft-pipeline.md).
 
 ## Why Open Source This?
 
@@ -176,8 +181,11 @@ npm run service:worker
 
 ```text
 src/content-engine/       Pure creative primitives: prompt grammar, fixtures, screenplay normalization.
+src/nft-pipeline/         NFT asset pipeline: mint art, state-loop APNGs, mutation clips, cycle recaps.
+src/prompts/              HashBeast prompt grammar: world lore, 12 faction packs, breeds, trait resolution.
 src/service/              Redis/BullMQ worker contracts and job processor.
 src/utils/                Media/provider helpers used by local trailer generation.
+scripts/                  Contributor scripts incl. assemble_anim.py (chroma-strip → APNG assembler).
 trailer/blueprints/       Launch trailer rough story clay and series bible.
 trailer/pipeline/         Multi-pass screenplay/script compiler.
 trailer/generate/         Frame, video, audio, lip-sync, and assembly pipeline.
@@ -190,6 +198,7 @@ docs/                     Contributor docs, architecture, proof, world packs, ad
 ## Documentation
 
 - [Architecture](docs/architecture.md)
+- [NFT Asset Pipeline](docs/nft-pipeline.md)
 - [Contributor Playbook](CONTRIBUTING.md)
 - [Media Proof and Evals](docs/evals-and-media-proof.md)
 - [Provider Adapters](docs/provider-adapters.md)

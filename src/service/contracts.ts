@@ -7,6 +7,22 @@ import type {
   VideoFormat,
   WorldPulse,
 } from "../content-engine/index.js";
+import type {
+  NftMintAssetsInput,
+  NftMintAssetsResult,
+} from "../nft-pipeline/mintAssets.js";
+import type {
+  NftStateAnimationsInput,
+  NftStateAnimationsResult,
+} from "../nft-pipeline/stateAnimations.js";
+import type {
+  NftMutationContentInput,
+  NftMutationContentResult,
+} from "../nft-pipeline/mutationContent.js";
+import type {
+  NftCycleSummaryInput,
+  NftCycleSummaryResult,
+} from "../nft-pipeline/cycleSummary.js";
 
 export const CONTENT_ENGINE_QUEUE =
   process.env.CONTENT_ENGINE_QUEUE || "minebtc-content-engine";
@@ -20,7 +36,14 @@ export type ContentEngineJobKind =
   | "build_character_reference_block"
   | "build_director_prompt_block"
   | "build_negative_visual_prompt"
-  | "build_video_motion_rules_block";
+  | "build_video_motion_rules_block"
+  // NFT asset pipeline (media jobs — minutes, not seconds; dispatch them
+  // fire-and-forget and react to progress/completed events instead of
+  // RPC-awaiting; see docs/nft-pipeline.md)
+  | "nft.mint_assets"
+  | "nft.state_animations"
+  | "nft.mutation_content"
+  | "nft.cycle_summary";
 
 export interface PlanEventInput {
   event: IncomingEventLike;
@@ -107,6 +130,10 @@ export interface ContentEngineJobPayloadMap {
   build_director_prompt_block: BuildDirectorPromptBlockInput;
   build_negative_visual_prompt: Record<string, never>;
   build_video_motion_rules_block: BuildDirectorPromptBlockInput;
+  "nft.mint_assets": NftMintAssetsInput;
+  "nft.state_animations": NftStateAnimationsInput;
+  "nft.mutation_content": NftMutationContentInput;
+  "nft.cycle_summary": NftCycleSummaryInput;
 }
 
 export interface ContentEngineJobResultMap {
@@ -119,6 +146,10 @@ export interface ContentEngineJobResultMap {
   build_director_prompt_block: BuildTextBlockResult;
   build_negative_visual_prompt: BuildTextBlockResult;
   build_video_motion_rules_block: BuildTextBlockResult;
+  "nft.mint_assets": NftMintAssetsResult;
+  "nft.state_animations": NftStateAnimationsResult;
+  "nft.mutation_content": NftMutationContentResult;
+  "nft.cycle_summary": NftCycleSummaryResult;
 }
 
 export type ContentEngineJobPayload<K extends ContentEngineJobKind = ContentEngineJobKind> = {

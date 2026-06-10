@@ -8,6 +8,12 @@
       - any-glob-to-any-file:
           - "src/service/**"
 
+"area: nft-pipeline":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/nft-pipeline/**"
+          - "scripts/assemble_anim.py"
+
 "area: trailer-pipeline":
   - changed-files:
       - any-glob-to-any-file:
