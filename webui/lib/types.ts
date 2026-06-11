@@ -2,6 +2,7 @@ export interface BlueprintSummary {
   id: string;
   file: string;
   title: string;
+  genre?: string;
   logline: string;
   targetSeconds: number;
   minSeconds: number;

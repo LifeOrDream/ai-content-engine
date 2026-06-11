@@ -4,20 +4,16 @@ A multi-pass **screenplay + sequence generator** for the degenBTC launch trailer
 
 This is a **standalone testbed** (run with `tsx`) and is included in repo typecheck/build so contributor changes fail fast. The point: dial in script quality + scene shape here, then promote the multi-pass approach into the service worker and backend adapters.
 
-## Why multi-pass (and not one LLM call)
+## Why phased (and how v2 collapsed 6 calls into 2)
 
-One prompt asking for "a crypto trailer script" reaches for the most statistically *trailer-ish* phrases → on-the-nose, pitch-deck dialogue. Good scripts are *layered*: structure, then intent, then words, then subtext, then compression, then voice, then the audio/visual split. So each of those is **its own pass** here. (Research: pros use character voice profiles + "subtext excavation" + read-aloud; for AI video you must keep dialogue separate from visual description, hero-keyframe then animate, and restate continuity per shot.)
+One prompt asking for "a crypto trailer script" reaches for the most statistically *trailer-ish* phrases → on-the-nose, pitch-deck dialogue. Good scripts are *layered*: structure, then intent, then words, then subtext, then the audio/visual split. v1 made each layer its own LLM call (6 calls); v2 keeps every layer as an **explicit internal phase** inside two Opus-4.8 calls — same craft, ~3x fewer calls, and fewer full-document round trips to lose keeper lines in. A deterministic lint still checks every promise after each call, and a targeted **self-heal** call fixes violations without re-running the pipeline (worst case 3-4 calls; normal case 2).
 
-## The 6 passes (`pipeline/passes.ts`)
+## The 2 passes (`pipeline/passes.ts`)
 
 | # | Pass | Job |
 |---|---|---|
-| 1 | **engagement** | Dopamine-ladder beat sheet: visual stun, curiosity loop, escalation, head-fake, payoff, serial promise. |
-| 2 | **dialogue** | Intent + dialogue in character voices, with strict word budget and no pitch-deck language. |
-| 3 | **polish** | Subtext, compression, table-read, and screen/mouth split. |
-| 4 | **direct** | Group shots into ≤15s Seedance sequences; assign camera, light, performance, FX, sound, and signature moments. |
-| 5 | **compile** | Strict JSON Seedance timeline prompts, native-audio direction, and draft-only `canonPlan`. |
-| 6 | **frames** | Start/end frame plans with ordered refs: `@cast:state`, `env:seqN.startFrame`, `country:<country>:...`, and `asset:<path>`. |
+| 1 | **script** | THE WRITERS ROOM — internal phases: dopamine-ladder beat sheet (LOOP bookkeeping) → intent + dialogue in cast voices with internal auditions → line-doctor polish (subtext, spoken-time, table-read, screen/mouth split). Outputs the LOCKED script + 3 hook / 3 cliffhanger CANDIDATES + the OVERLAYS plan (bait/CTA text track). Genre-aware (`genre:` frontmatter — story / skit / faceoff / lore / recap / anthem / edit / loop; see `style/genres.ts`). |
+| 2 | **produce** | THE PRODUCTION OFFICE — directs the locked script into ≤15s Seedance sequences (timing math, plain film English, signature moments), compiles each into a Seedance 2.0 timeline prompt, AND plans every start/end frame + the video-wide LOOK + the poster rule (seq 1's start frame doubles as the thumbnail) — one strict `scenes.json`. Dialogue is carried VERBATIM (machine-checked). |
 
 Every run injects the series bible, cinematic production grammar, country reference asset registry, country character registry, country location/storyboard registry, and canonized showrunner memory packet. Drafts can propose continuity changes, but only `canonize.ts` applies them after posting.
 
@@ -30,8 +26,8 @@ trailer/
     01..07-*.md             ← the 7 launch videos as ROUGH story clay (beats + intent + grounding seeds)
   pipeline/
     types.ts                ← Blueprint / Shot / Screenplay types
-    llm.ts                  ← model-swappable LLM caller (default gemini-2.5-pro; TRAILER_LLM_MODEL to change)
-    passes.ts               ← the 6 passes (the craft IP)
+    llm.ts                  ← model-swappable LLM caller (default anthropic/claude-opus-4.8 via fal; TRAILER_LLM_MODEL to change)
+    passes.ts               ← the 2 passes (the craft IP)
     run.ts                  ← CLI runner
     canonize.ts             ← post-publish canon memory update
   world/
@@ -41,28 +37,26 @@ trailer/
     storyMemory.ts          ← post-gated story memory + arc tracking
     story-memory.json       ← canon memory applied only after a posted video is canonized
   out/<id>/
-    01-engagement.md .. 06-frames.md
+    01-script.md, 02-produce.md
     scenes.json             ← FINAL Seedance-ready sequence list
     canon-draft.json        ← draft-only continuity proposal
     run-manifest.json       ← stage timeline, refs, artifacts, cost estimate, FAL request IDs
     subtitles.srt/.vtt      ← YouTube/WebVTT subtitle exports
+    subtitles.ass/.words.srt← word-timed karaoke caption track (burned onto final_captioned.mp4)
 ```
 
 ## Run
 
 ```bash
-# all 6 passes for one video
+# both passes for one video (2 LLM calls)
 npx tsx trailer/pipeline/run.ts 01
 
-# re-run just director→frames after hand-editing 03-polish.md
-npx tsx trailer/pipeline/run.ts 01 --from 4 --to 6
+# re-run just the production office after hand-editing 01-script.md
+npx tsx trailer/pipeline/run.ts 01 --only produce
 
-# one pass by id
-npx tsx trailer/pipeline/run.ts 01 --only dialogue
-
-# choose model/provider
-TRAILER_LLM_PROVIDER=fal TRAILER_LLM_MODEL=anthropic/claude-sonnet-4.6 npx tsx trailer/pipeline/run.ts 01
-TRAILER_LLM_MODEL=gemini-2.5-pro npx tsx trailer/pipeline/run.ts 01
+# choose model/provider (default: anthropic/claude-opus-4.8 via fal)
+TRAILER_LLM_MODEL=anthropic/claude-sonnet-4.6 npx tsx trailer/pipeline/run.ts 01
+TRAILER_LLM_PROVIDER=gemini TRAILER_LLM_MODEL=gemini-2.5-pro npx tsx trailer/pipeline/run.ts 01
 ```
 
 Each pass writes `out/<id>/NN-<pass>.md` so you can read the script get better stage by stage and **finalize by hand** at any point (edit a `NN-*.md`, then `--from N+1` to continue from your edit). The final `scenes.json` is the Seedance-ready shot list.

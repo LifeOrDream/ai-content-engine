@@ -5,12 +5,8 @@ import type { RunDetail } from "@/lib/types";
 import styles from "./RunInspector.module.css";
 
 const passLabel: Record<string, string> = {
-  "01-engagement.md": "1 engagement",
-  "02-dialogue.md": "2 dialogue",
-  "03-polish.md": "3 polish",
-  "04-direct.md": "4 direct",
-  "05-compile.md": "5 compile",
-  "06-frames.md": "6 frames",
+  "01-script.md": "1 script (writers room)",
+  "02-produce.md": "2 produce (direct+compile+frames)",
 };
 
 export function RunInspector({ run }: { run: RunDetail | null }) {
@@ -194,7 +190,7 @@ function FactoryPanel({ run }: { run: RunDetail }) {
 
 function DialoguePanel({ run }: { run: RunDetail }) {
   const health = run.dialogueHealth;
-  if (!health) return <div className={styles.empty}>No scenes.json yet. Run compile first.</div>;
+  if (!health) return <div className={styles.empty}>No scenes.json yet. Run the produce pass first.</div>;
   const cleanLines = health.lines.filter((line) => line.flags.length === 0).length;
   return (
     <>
@@ -288,7 +284,7 @@ function RefsPanel({ run }: { run: RunDetail }) {
 }
 
 function FramePanel({ run }: { run: RunDetail }) {
-  if (!run.frameHealth || !run.scenesSummary) return <div className={styles.empty}>No frame plans yet. Run compile + frames.</div>;
+  if (!run.frameHealth || !run.scenesSummary) return <div className={styles.empty}>No frame plans yet. Run the produce pass.</div>;
   return (
     <div className={styles.frameList}>
       <p className={styles.note}>

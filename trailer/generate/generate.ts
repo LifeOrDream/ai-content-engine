@@ -29,7 +29,9 @@ import { renderScene } from "./renderScene.js";
 import { renderSequence } from "./renderSequence.js";
 import { assembleTrailer } from "./assemble.js";
 import { resolveMusicBed } from "./audio.js";
-import { mixMusicBed } from "./ffmpeg.js";
+import { mixMusicBed, burnAss, burnOverlayTexts, stripAudio, probeDuration } from "./ffmpeg.js";
+import { buildWordCues, remapOverlays, renderableSequences, toAss, toWordSrt, type CaptionStyle, type IncludedClip } from "./captions.js";
+import { genreSpec } from "../style/genres.js";
 import { uploadBufferToS3 } from "../../src/utils/falMedia.js";
 import type { Screenplay, Sequence, Shot } from "../pipeline/types.js";
 import {
@@ -60,6 +62,78 @@ export interface GenerateOpts {
 }
 
 const RENDER_SCRIPTED_END_CARD = process.env.TRAILER_RENDER_SCRIPTED_END_CARD === "true";
+const KARAOKE = process.env.TRAILER_KARAOKE !== "false";
+const CAPTION_STYLE = ((process.env.TRAILER_CAPTION_STYLE || "punch") === "clean" ? "clean" : "punch") as CaptionStyle;
+const SILENT_MASTER = process.env.TRAILER_SILENT_MASTER !== "false";
+
+/**
+ * Packaging layer on the assembled master: karaoke captions (word-timed, from
+ * the script + ACTUAL clip durations — zero model calls), the bait-overlay
+ * track, and a silent master for trending-audio posting. Writes:
+ *   final.mp4            — clean master (always)
+ *   final_captioned.mp4  — karaoke + overlays burned (when earned)
+ *   final_silent.mp4     — captioned master, video-only
+ *   subtitles.ass / subtitles.words.srt — the caption track itself
+ *
+ * `included` is the exact clip list that went into the concat (with probed
+ * durations) so cue offsets match the real master — scripted durations drift
+ * from rendered clips (rounding/clamping/Seedance variance). When undefined
+ * (legacy shot mode), karaoke/overlays are skipped — only the silent master.
+ */
+async function packageMaster(master: Buffer, screenplay: Screenplay, outDir: string, included?: IncludedClip[]): Promise<void> {
+  const genre = genreSpec(screenplay.genre);
+  let packaged = master;
+  let packagedLabel = "final.mp4";
+  const renderable = renderableSequences(screenplay, RENDER_SCRIPTED_END_CARD);
+  if (included && included.length < renderable.length) {
+    console.log(`   packaging note: ${included.length}/${renderable.length} sequences in this master — captions/overlays cover only the included clips`);
+  }
+
+  if (KARAOKE && genre.captionMode === "karaoke" && included?.length) {
+    try {
+      const cues = buildWordCues(included, { includeCaptions: genre.musicMode === "track-first" });
+      if (cues.length > 0) {
+        const ass = toAss(cues, CAPTION_STYLE);
+        fs.writeFileSync(path.join(outDir, "subtitles.ass"), ass, "utf8");
+        fs.writeFileSync(path.join(outDir, "subtitles.words.srt"), toWordSrt(cues), "utf8");
+        registerRunArtifact(outDir, { kind: "subtitle", label: "Karaoke caption track (ASS)", path: "subtitles.ass" });
+        registerRunArtifact(outDir, { kind: "subtitle", label: "Word-timed SRT", path: "subtitles.words.srt" });
+        packaged = await burnAss(packaged, ass);
+        packagedLabel = "final_captioned.mp4";
+        console.log(`   captions: ${cues.length} word cues burned (${CAPTION_STYLE})`);
+      }
+    } catch (e: any) {
+      console.log(`   captions skipped: ${e?.message || e}`);
+    }
+  }
+
+  const overlays = included?.length
+    ? remapOverlays((screenplay.overlays || []).filter((o) => o.text?.trim()), renderable, included)
+    : [];
+  if (overlays.length > 0) {
+    try {
+      packaged = await burnOverlayTexts(packaged, overlays);
+      packagedLabel = "final_captioned.mp4";
+      console.log(`   overlays: ${overlays.length} bait/cta text(s) burned`);
+    } catch (e: any) {
+      console.log(`   overlays skipped: ${e?.message || e}`);
+    }
+  }
+
+  if (packagedLabel === "final_captioned.mp4") {
+    const p = path.join(outDir, "final_captioned.mp4");
+    fs.writeFileSync(p, packaged);
+    registerRunArtifact(outDir, { kind: "video", label: "Captioned master (karaoke + overlays)", path: "final_captioned.mp4" });
+  }
+
+  if (SILENT_MASTER) {
+    try {
+      const silent = await stripAudio(packaged);
+      fs.writeFileSync(path.join(outDir, "final_silent.mp4"), silent);
+      registerRunArtifact(outDir, { kind: "video", label: "Silent master (for trending audio)", path: "final_silent.mp4" });
+    } catch { /* optional export */ }
+  }
+}
 
 function ask(q: string): Promise<string> {
   if (!process.stdin.isTTY) return Promise.resolve(""); // non-interactive → auto-approve
@@ -203,6 +277,15 @@ async function generateFromSequences(screenplay: Screenplay, outDir: string, opt
     outputFiles: ["final.mp4"],
   });
   const ordered = clips.filter((b): b is Buffer => !!b && b.length > 0);
+  // The exact clip list entering the concat, with PROBED durations — caption
+  // and overlay offsets must follow the real clips, not scripted durations.
+  const included: IncludedClip[] = [];
+  for (let i = 0; i < sequences.length; i++) {
+    const buf = clips[i];
+    if (!buf || buf.length === 0) continue;
+    const probed = await probeDuration(buf);
+    included.push({ seq: sequences[i], seconds: probed > 0 ? probed : undefined });
+  }
   const final = await assembleTrailer(ordered, {
     countdown: screenplay.endCard?.countdown || "",
     musicBed,
@@ -213,6 +296,7 @@ async function generateFromSequences(screenplay: Screenplay, outDir: string, opt
   const finalPath = path.join(outDir, "final.mp4");
   fs.writeFileSync(finalPath, final);
   registerRunArtifact(outDir, { kind: "video", label: "Final assembled trailer", path: "final.mp4" });
+  await packageMaster(final, screenplay, outDir, included);
   completeRunStage(outDir, "assemble:final", {
     outputFiles: ["final.mp4"],
     notes: [`Assembled ${ordered.length} sequence clips.`],
@@ -289,6 +373,7 @@ async function generateFromShots(screenplay: Screenplay, outDir: string, opts: G
   if (!final) { console.log("   assembly produced nothing"); return null; }
   const finalPath = path.join(outDir, "final.mp4");
   fs.writeFileSync(finalPath, final);
+  await packageMaster(final, screenplay, outDir);
   console.log(`\n✅ FINAL → ${finalPath}  (${ordered.length} scenes)\n`);
   return finalPath;
 }

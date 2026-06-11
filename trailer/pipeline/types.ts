@@ -13,6 +13,8 @@
 export interface Blueprint {
   id: string;
   title: string; // YouTube-style headline
+  /** Video genre (see trailer/style/genres.ts). Default "story". */
+  genre: string;
   targetSeconds: number; // aim
   minSeconds: number; // floor (24)
   countdown: string; // end-card timer, e.g. "24:00:00"
@@ -21,6 +23,19 @@ export interface Blueprint {
   cast: string[]; // character ids present (resolved against the series bible)
   /** Markdown body of the blueprint (hook, grounding facts, beats, cliffhanger). */
   body: string;
+}
+
+/**
+ * An engagement-bait OVERLAY — a separate text track from fact captions
+ * ("wait for the end…", "send this to a USA holder", "part 3"). Burned at the
+ * top safe-zone at assembly; never duplicates dialogue or fact captions.
+ */
+export interface OverlayCue {
+  text: string;
+  /** Global seconds into the assembled video (sequence durations accumulated). */
+  atSec: number;
+  untilSec: number;
+  style: "bait" | "cta";
 }
 
 /** One spoken line, with the delivery/subtext note that drives TTS + animation. */
@@ -176,11 +191,17 @@ export interface Screenplay {
   blueprintId: string;
   title: string;
   logline: string;
+  /** Video genre id (trailer/style/genres.ts) — drives captions/music/assembly. */
+  genre?: string;
   /** Draft-only continuity proposal. Applied to memory only by canonize.ts after posting. */
   canonPlan?: Record<string, unknown>;
-  /** The story spine carried from pass 1 (core question / change / stakes). */
+  /** The story spine carried from the writers room (core question / change / stakes). */
   spine?: { coreQuestion: string; change: string; stakes: string };
-  /** Video-wide shared visual language (pass 6) — stamped into every frame prompt. */
+  /** Alternate hook/cliffhanger lines from the writers room (producer pick later). */
+  hookCandidates?: { hook: string[]; cliffhanger: string[] };
+  /** Engagement-bait overlay track (global timestamps; burned at assembly). */
+  overlays?: OverlayCue[];
+  /** Video-wide shared visual language — stamped into every frame prompt. */
   look?: string;
   totalSeconds: number;
   /** Seedance 2.0 sequence packages (the primary render unit). */

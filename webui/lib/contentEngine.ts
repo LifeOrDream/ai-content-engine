@@ -12,7 +12,7 @@ export const TRAILER_DIR = path.join(REPO_ROOT, "trailer");
 export const BLUEPRINTS_DIR = path.join(TRAILER_DIR, "blueprints");
 export const OUT_DIR = path.join(TRAILER_DIR, "out");
 
-export const PASS_IDS = ["engagement", "dialogue", "polish", "direct", "compile", "frames"] as const;
+export const PASS_IDS = ["script", "produce"] as const;
 export const PASS_FILES = PASS_IDS.map((id, index) => `${String(index + 1).padStart(2, "0")}-${id}.md`);
 export const VIDEO_EXTENSIONS = new Set([".mp4", ".mov", ".webm"]);
 
@@ -22,6 +22,7 @@ export interface BlueprintSummary {
   id: string;
   file: string;
   title: string;
+  genre: string;
   logline: string;
   targetSeconds: number;
   minSeconds: number;
@@ -39,6 +40,7 @@ export interface BlueprintDocument extends BlueprintSummary {
 export interface BlueprintSaveInput {
   id: string;
   title: string;
+  genre: string;
   logline: string;
   targetSeconds: number;
   minSeconds: number;
@@ -154,6 +156,7 @@ export function listBlueprints(): BlueprintSummary[] {
         id,
         file,
         title: data.title || id,
+        genre: data.genre || "story",
         logline: data.logline || "",
         targetSeconds: Number(data.targetSeconds || 75),
         minSeconds: Number(data.minSeconds || 24),
@@ -194,6 +197,7 @@ export function getBlueprintDocument(id: string): BlueprintDocument {
     id: data.id || fallbackId,
     file: path.basename(filePath),
     title: data.title || data.id || fallbackId,
+    genre: data.genre || "story",
     logline: data.logline || "",
     targetSeconds: Number(data.targetSeconds || 75),
     minSeconds: Number(data.minSeconds || 24),
@@ -218,12 +222,14 @@ function formatBlueprint(input: BlueprintSaveInput): string {
   const countdown = String(input.countdown || "24:00:00").trim();
   const cta = String(input.cta || "Mine your HashBeast - minebtc.fun").trim();
   const cast = input.cast.map((item) => item.trim()).filter(Boolean).join(",");
+  const genre = String(input.genre || "story").trim().toLowerCase() || "story";
   const logline = String(input.logline || "").trim();
   const body = String(input.body || "").trim();
   return [
     "---",
     `id: ${id}`,
     `title: ${yamlString(title)}`,
+    `genre: ${genre}`,
     `targetSeconds: ${targetSeconds}`,
     `minSeconds: ${minSeconds}`,
     `countdown: ${yamlString(countdown)}`,
@@ -387,7 +393,7 @@ export function getRunDetail(id: string, activeJobsByBlueprint = new Map<string,
 }
 
 export function readRunFile(id: string, file: string): string {
-  if (!file || path.basename(file) !== file || !/\.(md|json|srt|vtt|txt)$/.test(file)) throw new Error("Bad file name");
+  if (!file || path.basename(file) !== file || !/\.(md|json|srt|vtt|ass|txt)$/.test(file)) throw new Error("Bad file name");
   const filePath = safeResolve(safeResolve(OUT_DIR, id), file);
   return fs.readFileSync(filePath, "utf8");
 }
@@ -401,7 +407,7 @@ export function getRunArtifactPath(id: string, parts: string[]): string {
   const rel = parts.join("/");
   if (!rel || rel.includes("..")) throw new Error("Bad artifact path");
   const ext = path.extname(rel).toLowerCase();
-  const allowed = new Set([".png", ".jpg", ".jpeg", ".webp", ".gif", ".mp4", ".mov", ".webm", ".mp3", ".wav", ".srt", ".vtt", ".json", ".md", ".txt"]);
+  const allowed = new Set([".png", ".jpg", ".jpeg", ".webp", ".gif", ".mp4", ".mov", ".webm", ".mp3", ".wav", ".srt", ".vtt", ".ass", ".json", ".md", ".txt"]);
   if (!allowed.has(ext)) throw new Error("Artifact type not allowed");
   return safeResolve(safeResolve(OUT_DIR, id), rel);
 }

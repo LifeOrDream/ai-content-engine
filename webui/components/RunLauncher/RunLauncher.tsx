@@ -6,15 +6,11 @@ import { BlueprintEditor } from "@/components/BlueprintEditor/BlueprintEditor";
 import styles from "./RunLauncher.module.css";
 
 const passes = [
-  ["1", "1 engagement"],
-  ["2", "2 dialogue"],
-  ["3", "3 polish"],
-  ["4", "4 direct"],
-  ["5", "5 compile"],
-  ["6", "6 frames"],
+  ["1", "1 script (writers room)"],
+  ["2", "2 produce (direct+compile+frames)"],
 ];
 
-const onlyPasses = ["engagement", "dialogue", "polish", "direct", "compile", "frames"];
+const onlyPasses = ["script", "produce"];
 
 export function RunLauncher({
   blueprints,

@@ -5,12 +5,14 @@
  *   • "fal" (default when FAL_API_KEY is set) — fal.ai's openrouter/router
  *     endpoint: one API, 200+ models (Claude, GPT, Gemini, DeepSeek…), billed
  *     through the existing fal account by actual token usage.
- *     Default model: anthropic/claude-sonnet-4.6 — 1M context, top-tier
- *     creative writing + literal instruction-following (verbatim carry, LOOP
- *     discipline, strict JSON), AND it accepts `temperature`, which our
- *     per-pass ladder (0.9 creative → 0.3 compile) depends on. (Opus 4.8/4.7
- *     removed sampling params entirely — the ladder would silently break.)
- *     Fallback slugs: google/gemini-2.5-pro, openai/gpt-5, …
+ *     Default model: anthropic/claude-opus-4.8 — the strongest writer we can
+ *     route: expert-level prose, literal instruction-following (verbatim
+ *     carry, LOOP discipline, strict JSON) and long-horizon coherence, which
+ *     is what lets the v2 pipeline collapse six passes into two. Opus 4.7+
+ *     removed sampling params (temperature/top_p 400 on the Anthropic side),
+ *     so callFal omits `temperature` for those slugs — the pipeline no longer
+ *     depends on a temperature ladder; the craft lives in the prompts.
+ *     Fallback slugs: anthropic/claude-sonnet-4.6, google/gemini-2.5-pro, …
  *   • "gemini" — direct Google GenAI (needs GEMINI_KEY prepaid credits).
  *
  * Swap with TRAILER_LLM_PROVIDER / TRAILER_LLM_MODEL. Every pass goes through
@@ -27,7 +29,12 @@ const GEMINI_KEY = process.env.GEMINI_KEY || "";
 const PROVIDER = (process.env.TRAILER_LLM_PROVIDER || (FAL_KEY ? "fal" : "gemini")).toLowerCase();
 const MODEL =
   process.env.TRAILER_LLM_MODEL ||
-  (PROVIDER === "fal" ? "anthropic/claude-sonnet-4.6" : "gemini-2.5-pro");
+  (PROVIDER === "fal" ? "anthropic/claude-opus-4.8" : "gemini-2.5-pro");
+
+/** Opus 4.7+/Fable removed temperature/top_p/top_k — sending them 400s. */
+function modelSupportsSampling(model: string): boolean {
+  return !/claude-(?:opus-4[.-][78]|fable)/i.test(model);
+}
 const MAX_TOKENS = Math.max(4000, Number(process.env.TRAILER_LLM_MAX_TOKENS || 32000));
 const FAL_LLM_ENDPOINT = process.env.TRAILER_FAL_LLM_ENDPOINT || "openrouter/router";
 const POLL_MS = 2000;
@@ -55,7 +62,8 @@ async function callFal(prompt: string, opts: { temperature?: number; json?: bool
     body: JSON.stringify({
       model: MODEL,
       prompt,
-      temperature: opts.temperature ?? 0.9,
+      // Opus 4.7+/Fable reject sampling params — omit temperature there.
+      ...(modelSupportsSampling(MODEL) ? { temperature: opts.temperature ?? 0.9 } : {}),
       max_tokens: MAX_TOKENS,
       reasoning: false,
     }),

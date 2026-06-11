@@ -396,7 +396,7 @@ export function refreshRunManifestFromScreenplay(outDir: string, screenplay: Scr
       if (existing) Object.assign(existing, artifact);
       else manifest.artifacts.push(artifact);
     }
-    manifest.costEstimate = estimateCost(screenplay, opts.llmCalls || 6);
+    manifest.costEstimate = estimateCost(screenplay, opts.llmCalls || 2);
     manifest.quality = {
       dialogueLines: dialogue.lineCount,
       flaggedDialogue: dialogue.flaggedCount,

@@ -12,14 +12,15 @@ import path from "node:path";
 export const execFileP = promisify(execFile);
 export const W = 1920, H = 1080, FPS = 30;
 const FONT = process.env.CONTENT_FONT || "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf";
-const HAS_DRAWTEXT = (() => {
+const FILTERS = (() => {
   try {
-    return String(execFileSync("ffmpeg", ["-hide_banner", "-filters"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }))
-      .includes("drawtext");
+    return String(execFileSync("ffmpeg", ["-hide_banner", "-filters"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }));
   } catch {
-    return false;
+    return "";
   }
 })();
+const HAS_DRAWTEXT = FILTERS.includes("drawtext");
+const HAS_ASS = /\bass\b/.test(FILTERS);
 
 export function tmpDir(tag: string): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), `trailer-${tag}-`));
@@ -188,6 +189,78 @@ export async function mixMusicBed(masterBuf: Buffer, musicBuf: Buffer, vol = 0.1
     await execFileP("ffmpeg", ["-y", "-i", v, "-stream_loop", "-1", "-i", m,
       "-filter_complex", `[1:a]volume=${vol}[bg];[0:a][bg]amix=inputs=2:duration=first:dropout_transition=2[a]`,
       "-map", "0:v", "-map", "[a]", "-c:v", "copy", "-c:a", "aac", "-shortest", "-movflags", "+faststart", o], { maxBuffer: 1 << 27 });
+    return fs.readFileSync(o);
+  } finally { rmDir(dir); }
+}
+
+/**
+ * Loudness-normalize the master to streaming target (-14 LUFS, -1.5 dBTP) so
+ * our videos don't sit quiet next to everything else in the feed. Video copies
+ * through untouched.
+ */
+export async function loudnormalize(masterBuf: Buffer): Promise<Buffer> {
+  const dir = tmpDir("loud");
+  try {
+    const v = path.join(dir, "v.mp4"), o = path.join(dir, "o.mp4");
+    fs.writeFileSync(v, masterBuf);
+    await execFileP("ffmpeg", ["-y", "-i", v,
+      "-af", "loudnorm=I=-14:TP=-1.5:LRA=11",
+      "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-movflags", "+faststart", o], { maxBuffer: 1 << 27 });
+    return fs.readFileSync(o);
+  } finally { rmDir(dir); }
+}
+
+/** Burn an ASS subtitle track (karaoke captions) onto the master via libass. */
+export async function burnAss(masterBuf: Buffer, assText: string): Promise<Buffer> {
+  if (!HAS_ASS) throw new Error("ffmpeg build has no `ass` filter (libass) — cannot burn karaoke captions");
+  const dir = tmpDir("ass");
+  try {
+    const v = path.join(dir, "v.mp4"), a = path.join(dir, "subs.ass"), o = path.join(dir, "o.mp4");
+    fs.writeFileSync(v, masterBuf);
+    fs.writeFileSync(a, assText, "utf8");
+    // The ass filter takes a filename — escape filter-syntax specials. Inside
+    // single quotes ffmpeg copies bytes literally and a quote TERMINATES the
+    // section, so an embedded quote must close/escape/reopen: ' → '\''.
+    const assPath = a.replace(/\\/g, "/").replace(/:/g, "\\:").replace(/'/g, `'\\''`);
+    await execFileP("ffmpeg", ["-y", "-i", v, "-vf", `ass='${assPath}'`,
+      "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "copy", "-movflags", "+faststart", o], { maxBuffer: 1 << 27 });
+    return fs.readFileSync(o);
+  } finally { rmDir(dir); }
+}
+
+/**
+ * Burn engagement-bait OVERLAYS (the "wait for it…" / "send this to…" text
+ * track) at the TOP safe-zone — its own band, never colliding with karaoke
+ * (bottom) or fact captions (lower third).
+ */
+export async function burnOverlayTexts(
+  masterBuf: Buffer,
+  overlays: Array<{ text: string; atSec: number; untilSec: number }>,
+): Promise<Buffer> {
+  const usable = overlays.filter((o) => o.text?.trim() && Number(o.untilSec) > Number(o.atSec));
+  if (usable.length === 0 || !HAS_DRAWTEXT) return masterBuf;
+  const dir = tmpDir("ovl");
+  try {
+    const v = path.join(dir, "v.mp4"), o = path.join(dir, "o.mp4");
+    fs.writeFileSync(v, masterBuf);
+    const vf = usable
+      .map(
+        (c) =>
+          `drawtext=fontfile=${FONT}:text='${esc(c.text.trim())}':fontcolor=white:fontsize=54:borderw=4:bordercolor=black@0.95:x=(w-text_w)/2:y=h*0.14:enable='between(t,${Number(c.atSec).toFixed(2)},${Number(c.untilSec).toFixed(2)})'`,
+      )
+      .join(",");
+    await execFileP("ffmpeg", ["-y", "-i", v, "-vf", vf, "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "copy", "-movflags", "+faststart", o], { maxBuffer: 1 << 27 });
+    return fs.readFileSync(o);
+  } finally { rmDir(dir); }
+}
+
+/** Video-only export (silent master — for posting with platform trending audio). */
+export async function stripAudio(masterBuf: Buffer): Promise<Buffer> {
+  const dir = tmpDir("mute");
+  try {
+    const v = path.join(dir, "v.mp4"), o = path.join(dir, "o.mp4");
+    fs.writeFileSync(v, masterBuf);
+    await execFileP("ffmpeg", ["-y", "-i", v, "-an", "-c:v", "copy", "-movflags", "+faststart", o], { maxBuffer: 1 << 27 });
     return fs.readFileSync(o);
   } finally { rmDir(dir); }
 }

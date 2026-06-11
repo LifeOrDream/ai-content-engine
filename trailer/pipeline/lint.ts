@@ -69,13 +69,25 @@ function extractDialogueLines(text: string): string[] {
   return out;
 }
 
+/**
+ * The script's SHOT-block body — everything from the first SHOT line on.
+ * The header (SPINE / CANDIDATES / OVERLAYS) must NOT feed the dialogue
+ * extractor: `OVERLAY: "…"`/`HOOK A: "…"` match the speaker pattern, which
+ * made the overlay-duplication check a tautology and linted unused
+ * candidates as spoken lines.
+ */
+function shotBody(text: string): string {
+  const m = /^\s*SHOT\s+\d+/m.exec(text);
+  return m ? text.slice(m.index) : text;
+}
+
 function extractSpeakerFragments(line: string): string[] {
   if (!/^\s*[A-Z][A-Za-z .'"-]{0,30}:\s*/.test(line)) return [];
   return Array.from(line.matchAll(/"([^"]+)"/g)).map((m) => m[1]).filter(Boolean);
 }
 
-/** Lint a TEXT pass output (passes 1-4). `maxSeqSec` enables sequence-duration checks on the direct pass. */
-export function lintText(passId: string, text: string, bp: Blueprint, maxSeqSec?: number): LintResult {
+/** Lint a TEXT pass output (the writers-room `script` pass). */
+export function lintText(passId: string, text: string, bp: Blueprint, _maxSeqSec?: number): LintResult {
   const errors: string[] = [];
   const warnings: string[] = [];
   const n = norm(text);
@@ -85,7 +97,7 @@ export function lintText(passId: string, text: string, bp: Blueprint, maxSeqSec?
     return keeperNorms.some((k) => ln.includes(k) || k.includes(ln));
   };
 
-  // SPINE must survive every text pass — the FIELDS are load-bearing; the literal header word is cosmetic.
+  // SPINE must survive — the FIELDS are load-bearing; the literal header word is cosmetic.
   const spineFieldsMissing = ["CORE QUESTION", "CHANGE", "STAKES"].filter((f) => !text.includes(`${f}:`));
   for (const f of spineFieldsMissing) errors.push(`SPINE field missing: ${f}`);
   if (spineFieldsMissing.length === 0 && !/^\s*SPINE\b/m.test(text)) {
@@ -103,9 +115,11 @@ export function lintText(passId: string, text: string, bp: Blueprint, maxSeqSec?
     if (!n.includes(norm(keeper))) errors.push(`keeper line lost: "${keeper}"`);
   }
 
-  // Anti-slop lexicon + named emotions + word budget on dialogue lines.
+  // Anti-slop lexicon + named emotions + word budget on SPOKEN dialogue lines
+  // (the SHOT-block body only — header CANDIDATES/OVERLAYS are not speech).
   // Keeper lines are exempt from budget (they're protected verbatim, whatever their length).
-  const lines = extractDialogueLines(text);
+  const body = shotBody(text);
+  const lines = extractDialogueLines(body);
   for (const line of lines) {
     const ln = norm(line);
     for (const banned of BANNED_PITCH_PHRASES) {
@@ -115,54 +129,72 @@ export function lintText(passId: string, text: string, bp: Blueprint, maxSeqSec?
       if (pattern.test(line) && !isKeeperish(line)) errors.push(`bad dialogue smell (${reason}): "${line}"`);
     }
     if (NAMED_EMOTION_PATTERN.test(line)) warnings.push(`named emotion (show, don't say): "${line}"`);
-    if (passId !== "engagement" && words(line).length > MAX_LINE_WORDS && !isKeeperish(line)) {
+    if (words(line).length > MAX_LINE_WORDS && !isKeeperish(line)) {
       warnings.push(`single dialogue chunk may be too long (${words(line).length} words): "${line}"`);
     }
   }
 
-  // Pass-specific structure.
-  if (passId === "engagement") {
-    const nonKeeper = lines.filter((l) => !isKeeperish(l));
-    if (nonKeeper.length > 0) {
-      warnings.push(`engagement pass wrote ${nonKeeper.length} non-keeper dialogue line(s) — it must emit [intent:] placeholders only`);
-    }
-  }
-  if (passId === "direct") {
-    const seqs = (text.match(/^\s*SEQUENCE\s+\d+/gm) || []).length;
-    if (seqs === 0) errors.push("direct pass produced no SEQUENCE blocks");
-    // Sequence duration hard cap (one Seedance generation each) — over-cap is unrenderable.
-    if (maxSeqSec) {
-      for (const m of text.matchAll(/^\s*SEQUENCE\s+(\d+)[^\n]*?—\s*(\d+(?:\.\d+)?)s\s*$/gm)) {
-        if (Number(m[2]) > maxSeqSec) errors.push(`SEQUENCE ${m[1]} is ${m[2]}s — hard cap is ${maxSeqSec}s (one Seedance generation); it must be split`);
-      }
-      for (const m of text.matchAll(/^\s*SHOT\s+(\d+)\s*—\s*(\d+(?:\.\d+)?)s?-(\d+(?:\.\d+)?)s/gm)) {
-        if (Number(m[3]) > maxSeqSec) errors.push(`SHOT ${m[1]} ends at ${m[3]}s — beyond the ${maxSeqSec}s sequence cap (shot times restart at 0 per sequence)`);
+  // Writers-room structure: CANDIDATES (3 hooks + 3 cliffhangers) + OVERLAYS discipline.
+  if (passId === "script") {
+    const hookCands = (text.match(/^\s*HOOK [A-C]:/gm) || []).length;
+    const cliffCands = (text.match(/^\s*CLIFFHANGER [A-C]:/gm) || []).length;
+    if (hookCands < 3) warnings.push(`CANDIDATES block has ${hookCands}/3 hook candidates`);
+    if (cliffCands < 3) warnings.push(`CANDIDATES block has ${cliffCands}/3 cliffhanger candidates`);
+    // Candidates are prospective dialogue: banned-lexicon problems are worth
+    // surfacing, but as warnings — an unused candidate must not fail the pass.
+    for (const m of text.matchAll(/^\s*(?:HOOK|CLIFFHANGER) [A-C]:\s*"([^"]+)"/gm)) {
+      for (const [pattern, reason] of BANNED_DIALOGUE_PATTERNS) {
+        if (pattern.test(m[1])) warnings.push(`candidate has dialogue smell (${reason}): "${m[1]}"`);
       }
     }
-    if (INTERNAL_CODE.test(text)) warnings.push("internal grammar codes leaked into the directed script (must be plain film English)");
-    for (const m of text.matchAll(/^\s*SHOT\s+(\d+)\s*—\s*(\d+(?:\.\d+)?):(\d\d)-(\d+(?:\.\d+)?):(\d\d)s?\s*\n([\s\S]*?)(?=^\s*(?:SHOT\s+\d+|SEQUENCE\s+\d+)|$(?![\s\S]))/gm)) {
-      const shotNo = m[1];
-      const start = Number(m[2]) * 60 + Number(m[3]);
-      const end = Number(m[4]) * 60 + Number(m[5]);
-      const len = end - start;
-      const fragments = m[6].split("\n").flatMap(extractSpeakerFragments);
-      const spokenWords = words(fragments.join(" ")).length;
-      if (spokenWords > 0) {
-        const fit = spokenWords / WORDS_PER_SECOND + 0.5;
-        if (fit > len + 0.5) errors.push(`SHOT ${shotNo}: directed dialogue (~${fit.toFixed(1)}s) won't fit the ${len.toFixed(1)}s slot`);
-        const minWords = minDialogueWordsForSlot(len);
-        if (spokenWords < minWords && !DELIBERATE_SILENCE.test(m[6])) warnings.push(`SHOT ${shotNo}: directed dialogue may be sparse for ${len.toFixed(1)}s slot (${spokenWords} words; target at least ${minWords}, or mark deliberate silence/reaction)`);
-      }
+    const overlayLines = Array.from(text.matchAll(/^\s*OVERLAY:\s*"([^"]+)"/gm)).map((m) => m[1]);
+    if (overlayLines.length > 2) warnings.push(`${overlayLines.length} overlays — max is 2 (restraint is the rule)`);
+    for (const o of overlayLines) {
+      if (words(o).length > 8) warnings.push(`overlay too long (${words(o).length} words, max 8): "${o}"`);
+      if (lines.some((l) => norm(l) === norm(o))) warnings.push(`overlay duplicates a dialogue line: "${o}"`);
     }
-    for (const m of text.matchAll(/^\s*CHARACTERS:\s*(.+)$/gm)) {
-      // Count by @refTags (descriptions contain commas — splitting on them false-positives).
-      const tags = m[1].match(/@[a-z0-9_]+/gi) || [];
-      const count = tags.length > 0 ? new Set(tags.map((t) => t.toLowerCase())).size : (/^\s*none\b/i.test(m[1]) ? 0 : 1);
-      if (count > MAX_SEQ_CHARS) warnings.push(`sequence has ${count} characters (max ${MAX_SEQ_CHARS}): "${m[1].trim().slice(0, 80)}"`);
-    }
+    if (INTERNAL_CODE.test(text)) warnings.push("internal grammar codes leaked into the locked script");
   }
 
   return { errors, warnings };
+}
+
+/** Lint the screenplay's overlay track (engagement-bait text, global timestamps). */
+export function lintOverlays(sp: Screenplay): LintResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  const overlays = sp.overlays || [];
+  const total = Number(sp.totalSeconds) || 0;
+  if (overlays.length > 2) errors.push(`overlays: ${overlays.length} entries — max 2`);
+  for (const [i, o] of overlays.entries()) {
+    const tag = `overlay ${i + 1}`;
+    if (!o.text?.trim()) { errors.push(`${tag}: empty text`); continue; }
+    if (words(o.text).length > 8) warnings.push(`${tag}: too long (${words(o.text).length} words, max 8): "${o.text}"`);
+    if (!(Number(o.untilSec) > Number(o.atSec))) errors.push(`${tag}: untilSec must be > atSec`);
+    if (Number(o.untilSec) - Number(o.atSec) < 1.5) warnings.push(`${tag}: window under 1.5s — too quick to read`);
+    if (total > 0 && Number(o.atSec) > total) errors.push(`${tag}: atSec ${o.atSec}s is beyond the ~${total}s runtime`);
+    if (total > 0 && Number(o.untilSec) > total + 2) warnings.push(`${tag}: untilSec ${o.untilSec}s runs past the ~${total}s runtime`);
+    if (!["bait", "cta"].includes(String(o.style))) warnings.push(`${tag}: style should be bait|cta (got "${o.style}")`);
+    // Must never duplicate a spoken line or a fact caption.
+    const on = norm(o.text);
+    for (const seq of sp.sequences || []) {
+      for (const sh of seq.shots || []) {
+        if (sh.caption && norm(sh.caption) === on) warnings.push(`${tag}: duplicates a fact caption ("${o.text}")`);
+        for (const d of sh.dialogue || []) {
+          if (d.line && norm(d.line) === on) warnings.push(`${tag}: duplicates a dialogue line ("${o.text}")`);
+        }
+      }
+    }
+  }
+  return { errors, warnings };
+}
+
+/** Merge lint results (utility for callers that combine several lints). */
+export function collectLintIssues(...results: LintResult[]): LintResult {
+  return {
+    errors: results.flatMap((r) => r.errors),
+    warnings: results.flatMap((r) => r.warnings),
+  };
 }
 
 /** Lint the compiled screenplay (pass 5 output) against the directed script. */

@@ -8,13 +8,14 @@
  * skipped, never fatal.
  */
 import "dotenv/config";
-import { concat, mixMusicBed, W, H } from "./ffmpeg.js";
+import { concat, mixMusicBed, loudnormalize, W, H } from "./ffmpeg.js";
 import { brandVideo } from "../../src/utils/videoBrand.js";
 import { buildEndCardClip } from "../../src/services/showrunner/endCard.service.js";
 
 const MUSIC_VOL = Number(process.env.TRAILER_MUSIC_VOLUME || 0.16);
 const BRAND = process.env.TRAILER_BRAND !== "false";
 const END_CARD = process.env.TRAILER_END_CARD !== "false";
+const LOUDNORM = process.env.TRAILER_LOUDNORM !== "false";
 
 export async function assembleTrailer(
   scenes: Buffer[],
@@ -47,6 +48,11 @@ export async function assembleTrailer(
   // 4. brand badge (top-center, clear of UI safe zone)
   if (BRAND) {
     try { master = await brandVideo(master); } catch { /* keep unbranded */ }
+  }
+
+  // 5. loudness normalize to streaming target (-14 LUFS) — quiet videos die in feeds
+  if (LOUDNORM) {
+    try { master = await loudnormalize(master); } catch { /* ship un-normalized */ }
   }
 
   return master;

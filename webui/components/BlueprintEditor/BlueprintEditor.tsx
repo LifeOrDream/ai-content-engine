@@ -8,6 +8,7 @@ const emptyBlueprint = (): BlueprintDocument => ({
   id: "",
   file: "",
   title: "",
+  genre: "story",
   logline: "",
   targetSeconds: 75,
   minSeconds: 24,
@@ -77,6 +78,7 @@ export function BlueprintEditor({
         const payload = {
           id: draft.id,
           title: draft.title,
+          genre: draft.genre || "story",
           logline: draft.logline,
           targetSeconds: draft.targetSeconds,
           minSeconds: draft.minSeconds,
@@ -125,6 +127,14 @@ export function BlueprintEditor({
             <label className={styles.field}>
               <span>Title</span>
               <input value={draft.title} onChange={(event) => update("title", event.target.value)} placeholder="America Woke Up Late" />
+            </label>
+            <label>
+              <span>Genre</span>
+              <select value={draft.genre || "story"} onChange={(event) => update("genre", event.target.value)}>
+                {["story", "skit", "faceoff", "lore", "recap", "anthem", "edit", "loop"].map((g) => (
+                  <option key={g} value={g}>{g}</option>
+                ))}
+              </select>
             </label>
 
             <label className={styles.field}>

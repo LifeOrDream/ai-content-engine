@@ -14,6 +14,7 @@ export async function POST(request: NextRequest) {
     const blueprint = saveBlueprintDocument({
       id: String(body.id || ""),
       title: String(body.title || ""),
+      genre: String(body.genre || "story"),
       logline: String(body.logline || ""),
       targetSeconds: Number(body.targetSeconds || 75),
       minSeconds: Number(body.minSeconds || 24),

@@ -20,6 +20,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const blueprint = saveBlueprintDocument({
       id: String(body.id || id),
       title: String(body.title || ""),
+      genre: String(body.genre || "story"),
       logline: String(body.logline || ""),
       targetSeconds: Number(body.targetSeconds || 75),
       minSeconds: Number(body.minSeconds || 24),
