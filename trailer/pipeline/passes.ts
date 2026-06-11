@@ -43,7 +43,7 @@ import { CINEMATIC_PRODUCTION_PLAN } from "../world/cinematicProduction.js";
 
 type HeaderCtx = {
   bible: string;
-  blueprint: { title: string; logline: string; genre?: string; targetSeconds: number; minSeconds: number; cast: string[]; body: string };
+  blueprint: { title: string; logline: string; genre?: string; aspect?: string; targetSeconds: number; minSeconds: number; cast: string[]; body: string };
   showrunnerPacket?: string;
   referenceAssetBlock?: string;
   countryCharacterBlock?: string;
@@ -254,7 +254,7 @@ ${castVoiceDesignBlock(ctx.blueprint.cast)}
 ${prev}
 
 ═══════════ YOUR JOB — PASS 2 of 2: THE PRODUCTION OFFICE ═══════════
-The script is LOCKED: SPINE, LOOP, STORY, POV, TONE, VISUAL TASK, ACTION, INTENT, every dialogue line + delivery note, and every ON-SCREEN caption carry through VERBATIM. (The CANDIDATES and OVERLAYS blocks are metadata, not shots — handle them per the rules below.) You do three jobs in one output: DIRECT, COMPILE, and PLAN FRAMES. Genre: ${genre.label} (captions: ${genre.captionMode}; music: ${genre.musicMode}).
+The script is LOCKED: SPINE, LOOP, STORY, POV, TONE, VISUAL TASK, ACTION, INTENT, every dialogue line + delivery note, and every ON-SCREEN caption carry through VERBATIM. (The CANDIDATES and OVERLAYS blocks are metadata, not shots — handle them per the rules below.) You do three jobs in one output: DIRECT, COMPILE, and PLAN FRAMES. Genre: ${genre.label} (captions: ${genre.captionMode}; music: ${genre.musicMode}). Render aspect: ${ctx.blueprint.aspect || "16:9"}.${ctx.blueprint.aspect === "9:16" ? " VERTICAL-NATIVE: stage for a phone screen — single-subject compositions, tighter shot sizes, subjects centered in the middle 70% of frame width, vertical headroom for the top overlay band and bottom caption band, no wide two-shot masters (favor shot/counter-shot)." : ""}
 
 ──────── JOB 1: DIRECT (sequences + cinematography) ────────
 1. GROUP INTO SEQUENCES — one sequence = one Seedance generation (HARD CAP ${ctx.seedanceMaxSec}s — NO exceptions; an over-cap sequence is unrenderable):
@@ -322,7 +322,7 @@ OUTPUT — STRICT JSON ONLY (no markdown):
       "signature": "",
       "timelinePrompt": "GLOBAL: … VOICE: … ENVIRONMENT: … MOOD/COLOR/MUSIC/STYLE: …\\n0:00-0:03 — …\\n0:03-0:07 — …\\nRULES: …\\nLOGIC: hard cuts between shots",
       "negativePrompt": "short targeted list",
-      "startFrame": { "prompt": "full static still, identity-anchored, no motion words, no text", "refs": ["@rex:default", "country:usa:environmentBoard"], "aspect": "16:9" },
+      "startFrame": { "prompt": "full static still, identity-anchored, no motion words, no text", "refs": ["@rex:default", "country:usa:environmentBoard"], "aspect": ${JSON.stringify(ctx.blueprint.aspect || "16:9")} },
       "endFrame": { "prompt": "…", "refs": ["@rex:default"], "reason": "bridge" },
       "shots": [
         {

@@ -15,6 +15,8 @@ export interface Blueprint {
   title: string; // YouTube-style headline
   /** Video genre (see trailer/style/genres.ts). Default "story". */
   genre: string;
+  /** Render aspect: "16:9" | "9:16" | "1:1". Default 16:9. */
+  aspect: string;
   targetSeconds: number; // aim
   minSeconds: number; // floor (24)
   countdown: string; // end-card timer, e.g. "24:00:00"
@@ -193,6 +195,8 @@ export interface Screenplay {
   logline: string;
   /** Video genre id (trailer/style/genres.ts) — drives captions/music/assembly. */
   genre?: string;
+  /** Render aspect ("16:9" | "9:16" | "1:1") — generate/run.ts seeds TRAILER_ASPECT from this. */
+  aspect?: string;
   /** Draft-only continuity proposal. Applied to memory only by canonize.ts after posting. */
   canonPlan?: Record<string, unknown>;
   /** The story spine carried from the writers room (core question / change / stakes). */

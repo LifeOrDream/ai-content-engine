@@ -99,10 +99,13 @@ function craftBlock(g: StoryGrounding, format: VideoFormat): string {
     ].join("\n");
   }
   return [
-    `═══════════ HOW TO MAKE IT GO VIRAL (craft rules — obey strictly) ═══════════`,
-    `1. COLD OPEN: Shot 1 must hook in the FIRST 1–2 SECONDS — drop us mid-action or on a shocking/funny line. NO slow intro, NO logo, NO "meanwhile in…". Earn the next 2 seconds, then the next.`,
-    `2. PACING: short shots (3–8s each), fast cuts, rising stakes. Total runtime ≈ ${format.targetSeconds}s across ${format.minShots}–${format.maxShots} shots.`,
-    `3. SPINE: hook → setup → escalation → a turn/twist → payoff → CLIFFHANGER (an open loop that makes them wait for the next episode).`,
+    `═══════════ HOW TO MAKE IT GO VIRAL (the dopamine ladder — obey strictly) ═══════════`,
+    `1. L1 STUN (first 1–2 SECONDS): shot 1 is a visual stun — name the exact motion, color pop, and strangeness. Mid-action or on a shocking/funny line. NO slow intro, NO logo, NO "meanwhile in…". The first frame is also the poster: one readable subject with a face or conflict.`,
+    `2. L2 QUESTION (by ~5s): pop ONE big non-obvious question in the viewer's head, written exactly as they'd think it. Every shot carries a "loop" field: opens|raises|head-fake|closes "<that question>". A shot with no writable loop duty is dead weight — cut or fuse it.`,
+    `3. L3 RATCHET: each middle shot feeds a detail that sharpens the viewer's guess AND escalates stakes/scale (small → medium → huge). Insert exactly one HEAD-FAKE (a misdirect/interruption) just before the payoff.`,
+    `4. L4 PAYOFF: answer the core question IN this video, NON-OBVIOUSLY (if it's what they'd guess at second 5, twist it). The CLIFFHANGER is a NEW question opened after the payoff — never the payoff withheld.`,
+    `5. L5 AFFECTION: at least one beat exists purely to make the POV beast likable — charm, vulnerability leaking through a joke, a cost paid.`,
+    `6. PACING: short shots (3–8s each), fast cuts. Total runtime ≈ ${format.targetSeconds}s across ${format.minShots}–${format.maxShots} shots.`,
     ...shared,
     `8. Keep it FUN, fast, and a little unhinged — degen energy, meme-aware, but grounded in our world's aesthetic.`,
   ].join("\n");
@@ -143,13 +146,14 @@ ${buildDirectorPromptBlock(format)}
 ${buildDialogueRulesBlock(Math.round(format.targetSeconds / Math.max(format.minShots, 1)))}
 
 ═══════════ DIALOGUE QUALITY GATE — RUN BEFORE JSON OUTPUT ═══════════
-For every spoken line, silently check:
+For every speaking shot, AUDITION silently first: draft 2-3 line angles (a status/taunt version, a fear/subtext version, a weird-comic version), then keep the one that best serves the shot's loop duty, fits the spoken time, and sounds most unmistakably like that character. Then check every kept line:
 1. What does the speaker WANT from the listener right now?
 2. What TACTIC are they using — bluff, dare, accusation, recruitment, confession, deflection, joke hiding fear, rivalry move?
 3. Does the line fit the shot time when spoken at ~2.3 words/sec?
 4. Would this still sound like the same character if the prop/caption were hidden?
-5. Did you avoid prop labels, mechanic phrases, founder/pitch language, and inspirational thesis lines?
-If any answer fails, rewrite the line before output.
+5. Does the line perform its shot's LOOP duty (pop / sharpen / misdirect / close the question)?
+6. THE BANNED LEXICON (a machine lint rejects ANY spoken line containing these): "fair launch", "pre-mine", "insiders", "emissions", "yield", "no pulse", "leaderboard", "4-hour", "pick up a pickaxe", "earn the signal", "velvet rope", "founder's table", "screensaver", "mine your destiny", "something broken", "started with one room", "before anyone asked", single-word prop labels ("Slow.", "Locked.", "Dead."), and pitch words ("revolutionary", "cutting-edge", "game-changing", "seamless", "unlock the", "empower", "isn't just a", "next-generation", "ecosystem of", "paradigm", "supercharge", "skyrocket"). Facts live in captions/visuals; the mouth keeps the feeling.
+If any answer fails, rewrite the line before output. A character almost never names their own emotion — show it with behavior.
 
 ═══════════ OUTPUT — STRICT JSON ONLY (no markdown, no commentary) ═══════════
 {
@@ -163,6 +167,7 @@ If any answer fails, rewrite the line before output.
     {
       "n": 1,
       "beat": "cold_open|setup|escalation|turn|payoff|cliffhanger",
+      "loop": "opens|raises|head-fake|closes \\"<the viewer's question>\\"",
       "durationSec": 5,
       "location": "the setting, grounded in the nation's world",
       "cast": ["<mint of the beast(s) on screen, from the CAST list; [] if a crowd/establishing>"],
@@ -218,6 +223,7 @@ export function normalizeScreenplay(
     return {
       n: i + 1,
       beat: String(s.beat || (i === 0 ? "cold_open" : "escalation")),
+      loop: s.loop ? String(s.loop).slice(0, 220) : undefined,
       durationSec: clamp(Number(s.durationSec) || 5, 3, 10),
       location: String(s.location || "the mining floor").slice(0, 200),
       cast,

@@ -148,6 +148,11 @@ export interface RunDetail extends RunSummary {
     shotCount: number;
     endCard?: unknown;
     look: string;
+    genre?: string;
+    aspect?: string;
+    spine?: { coreQuestion?: string; change?: string; stakes?: string };
+    hookCandidates?: { hook: string[]; cliffhanger: string[] };
+    overlays?: Array<{ text: string; atSec: number; untilSec: number; style: string }>;
     firstSequences: Array<{
       n: number | string;
       label?: string;

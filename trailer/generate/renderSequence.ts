@@ -17,7 +17,7 @@ import path from "node:path";
 import zlib from "node:zlib";
 import { generateImageEditFromBuffers, generateVideoFromFrames, uploadBufferToS3 } from "../../src/utils/falMedia.js";
 import { resolveCharacter, ensureStateRefs } from "./cast.js";
-import { burnTimedCaptions, normalizeAndCaption, probeDuration } from "./ffmpeg.js";
+import { burnTimedCaptions, normalizeAndCaption, probeDuration, RENDER_ASPECT, W as PLATE_W, H as PLATE_H } from "./ffmpeg.js";
 import type { Sequence, FramePlan } from "../pipeline/types.js";
 import { loadReferenceAssetBuffers, resolveReferenceAsset } from "../world/assetRegistry.js";
 import { resolveCountryCharacterProfile } from "../world/countryCastRegistry.js";
@@ -36,8 +36,6 @@ const VIDEO_MIN_SEC = 4; // Seedance 2.0 duration enum floor
 const VIDEO_MAX_SEC = Math.max(VIDEO_MIN_SEC, Number(process.env.TRAILER_VIDEO_MAX_SEC || 15));
 const SAVE_PROMPTS = process.env.TRAILER_SAVE_PROMPTS === "true";
 const DEBUG = process.env.TRAILER_DEBUG !== "false";
-const PLATE_W = 1920;
-const PLATE_H = 1080;
 
 export interface RenderSequenceOptions {
   /** Force re-generating frames + video even when cached files exist. */
@@ -315,7 +313,7 @@ async function ensureFrame(
       const img = await generateImageEditFromBuffers(
         prompt,
         refs.map((buffer) => ({ buffer, mime: "image/png" as const })),
-        { aspectRatio: plan.aspect || "16:9", resolution: IMG_RES },
+        { aspectRatio: plan.aspect || RENDER_ASPECT, resolution: IMG_RES },
       );
       buffer = img.buffer;
       fs.writeFileSync(file, buffer);
@@ -376,7 +374,7 @@ export async function renderSequence(
   const vid = await generateVideoFromFrames(videoPrompt, start.url, end?.url, {
     durationSecs,
     resolution: VIDEO_RES,
-    aspectRatio: "16:9",
+    aspectRatio: RENDER_ASPECT,
     model: SEQ_VIDEO_MODEL,
     generateAudio: NATIVE_AUDIO,
   });

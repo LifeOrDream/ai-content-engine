@@ -72,10 +72,14 @@ function parseBlueprint(file: string): Blueprint {
   const band = genreSpec(genre).durationBand;
   const defaultTarget = genre === "story" ? 75 : band[1];
   const defaultMin = genre === "story" ? 24 : band[0];
+  const aspect = ["16:9", "9:16", "1:1"].includes((fm.aspect || "").trim())
+    ? fm.aspect.trim()
+    : (process.env.TRAILER_ASPECT || "16:9");
   return {
     id,
     title: fm.title || id,
     genre,
+    aspect,
     targetSeconds: Number(fm.targetSeconds || defaultTarget),
     minSeconds: Number(fm.minSeconds || defaultMin),
     countdown: fm.countdown || "24:00:00",
@@ -134,6 +138,7 @@ function buildScreenplay(parsed: any, bp: Blueprint): Screenplay {
     title: parsed.title || bp.title,
     logline: parsed.logline || bp.logline,
     genre: parsed.genre || bp.genre || "story",
+    aspect: bp.aspect || "16:9",
     canonPlan: parsed.canonPlan,
     spine: parsed.spine,
     hookCandidates: parsed.hookCandidates,

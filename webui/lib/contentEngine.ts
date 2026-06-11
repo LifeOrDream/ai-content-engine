@@ -107,6 +107,11 @@ export interface RunDetail extends RunSummary {
     shotCount: number;
     endCard?: unknown;
     look: string;
+    genre?: string;
+    aspect?: string;
+    spine?: { coreQuestion?: string; change?: string; stakes?: string };
+    hookCandidates?: { hook: string[]; cliffhanger: string[] };
+    overlays?: Array<{ text: string; atSec: number; untilSec: number; style: string }>;
     firstSequences: Array<{
       n: number | string;
       label?: string;
@@ -376,6 +381,11 @@ export function getRunDetail(id: string, activeJobsByBlueprint = new Map<string,
       shotCount: scenes.shots?.length || scenes.sequences?.reduce((sum: number, seq: any) => sum + (seq.shots?.length || 0), 0) || 0,
       endCard: scenes.endCard,
       look: scenes.look || "",
+      genre: scenes.genre || "story",
+      aspect: scenes.aspect || "16:9",
+      spine: scenes.spine || undefined,
+      hookCandidates: scenes.hookCandidates || undefined,
+      overlays: Array.isArray(scenes.overlays) ? scenes.overlays : [],
       firstSequences: (scenes.sequences || []).slice(0, 12).map((seq: any) => ({
         n: seq.n,
         label: seq.label,

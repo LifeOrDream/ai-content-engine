@@ -29,7 +29,6 @@ import "dotenv/config";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { generateTrailer } from "./generate.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const OUT = path.resolve(__dirname, "..", "out");
@@ -55,6 +54,19 @@ async function main() {
     return;
   }
   const { scenesPath, outDir } = resolveScenes(idArg);
+  // Seed render dims from the screenplay's aspect BEFORE the renderer module
+  // loads (ffmpeg.ts computes W/H at import time). An explicit TRAILER_ASPECT
+  // env always wins.
+  if (!process.env.TRAILER_ASPECT) {
+    try {
+      const aspect = JSON.parse(fs.readFileSync(scenesPath, "utf8"))?.aspect;
+      if (aspect === "9:16" || aspect === "1:1") {
+        process.env.TRAILER_ASPECT = aspect;
+        console.log(`   aspect: ${aspect} (from scenes.json)`);
+      }
+    } catch { /* default 16:9 */ }
+  }
+  const { generateTrailer } = await import("./generate.js");
   await generateTrailer(scenesPath, outDir, {
     approvePerScene: has("--approve") || process.env.TRAILER_APPROVE_PER_SCENE === "true",
     telegramScenes: has("--tg") || process.env.TRAILER_TG_SCENES === "true",

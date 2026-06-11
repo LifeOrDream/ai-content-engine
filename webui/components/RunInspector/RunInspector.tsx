@@ -27,6 +27,7 @@ export function RunInspector({ run }: { run: RunDetail | null }) {
   const tabs = [
     { id: "factory", label: "Factory" },
     { id: "dialogue", label: "Dialogue QA" },
+    { id: "producer", label: "Producer" },
     { id: "refs", label: "Refs / assets" },
     { id: "frames", label: "Frame plan" },
     { id: "videos", label: "Videos" },
@@ -84,6 +85,7 @@ export function RunInspector({ run }: { run: RunDetail | null }) {
       <div className={styles.viewer}>
         {tab === "factory" ? <FactoryPanel run={run} /> : null}
         {tab === "dialogue" ? <DialoguePanel run={run} /> : null}
+        {tab === "producer" ? <ProducerPanel run={run} /> : null}
         {tab === "refs" ? <RefsPanel run={run} /> : null}
         {tab === "frames" ? <FramePanel run={run} /> : null}
         {tab === "videos" ? <VideoPanel run={run} /> : null}
@@ -305,15 +307,76 @@ function FramePanel({ run }: { run: RunDetail }) {
 }
 
 function VideoPanel({ run }: { run: RunDetail }) {
+  const [phone, setPhone] = useState(false);
   if (!run.videos.length) return <div className={styles.empty}>No video files in this run yet.</div>;
+  const vertical = run.scenesSummary?.aspect === "9:16";
   return (
-    <div className={styles.videoGrid}>
-      {run.videos.map((file) => (
-        <article className={styles.videoCard} key={file}>
-          <video controls src={artifactUrl(run.id, file)} />
-          <p>{file}</p>
+    <div>
+      <label style={{ display: "inline-flex", alignItems: "center", gap: 8, marginBottom: 12, fontSize: 13, cursor: "pointer" }}>
+        <input type="checkbox" checked={phone} onChange={(event) => setPhone(event.target.checked)} />
+        Phone preview (9:16 frame + safe zones)
+      </label>
+      <div className={styles.videoGrid}>
+        {run.videos.map((file) => (
+          <article className={styles.videoCard} key={file}>
+            {phone ? (
+              <div style={{ position: "relative", width: 252, height: 448, margin: "0 auto", borderRadius: 24, border: "3px solid #2b2f3a", overflow: "hidden", background: "#000" }}>
+                <video
+                  controls
+                  src={artifactUrl(run.id, file)}
+                  style={vertical
+                    ? { width: "100%", height: "100%", objectFit: "cover" }
+                    : { position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", height: "100%", width: "auto", maxWidth: "none" }}
+                />
+                {/* platform UI safe zones: bottom ~15% caption/actions, right ~12% action rail */}
+                <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: "15%", background: "rgba(255,80,80,0.12)", borderTop: "1px dashed rgba(255,80,80,0.6)", pointerEvents: "none" }} />
+                <div style={{ position: "absolute", top: "30%", right: 0, bottom: "15%", width: "12%", background: "rgba(255,80,80,0.10)", borderLeft: "1px dashed rgba(255,80,80,0.5)", pointerEvents: "none" }} />
+              </div>
+            ) : (
+              <video controls src={artifactUrl(run.id, file)} />
+            )}
+            <p>{file}</p>
+          </article>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ProducerPanel({ run }: { run: RunDetail }) {
+  const sc = run.scenesSummary;
+  if (!sc) return <div className={styles.empty}>Run the produce pass first — hooks, overlays, and the spine come from scenes.json.</div>;
+  const hooks = sc.hookCandidates?.hook || [];
+  const cliffs = sc.hookCandidates?.cliffhanger || [];
+  const overlays = sc.overlays || [];
+  return (
+    <div className={styles.subtitleGrid}>
+      <article className={styles.auditCard}>
+        <h3>Format</h3>
+        <p>genre: <strong>{sc.genre || "story"}</strong> · aspect: <strong>{sc.aspect || "16:9"}</strong> · ~{sc.totalSeconds}s</p>
+      </article>
+      {sc.spine ? (
+        <article className={styles.auditCard}>
+          <h3>Spine</h3>
+          <p><strong>Q:</strong> {sc.spine.coreQuestion || "-"}</p>
+          <p><strong>Change:</strong> {sc.spine.change || "-"}</p>
+          <p><strong>Stakes:</strong> {sc.spine.stakes || "-"}</p>
         </article>
-      ))}
+      ) : null}
+      <article className={styles.auditCard}>
+        <h3>Hook candidates</h3>
+        {hooks.length ? hooks.map((line, index) => <p key={index}>{index === 0 ? "★ " : "· "}{line}</p>) : <p>none recorded</p>}
+      </article>
+      <article className={styles.auditCard}>
+        <h3>Cliffhanger candidates</h3>
+        {cliffs.length ? cliffs.map((line, index) => <p key={index}>{index === 0 ? "★ " : "· "}{line}</p>) : <p>none recorded</p>}
+      </article>
+      <article className={styles.auditCard}>
+        <h3>Overlay track</h3>
+        {overlays.length
+          ? overlays.map((o, index) => <p key={index}>[{o.style}] “{o.text}” · {Number(o.atSec).toFixed(1)}–{Number(o.untilSec).toFixed(1)}s</p>)
+          : <p>no overlays (restraint is a choice)</p>}
+      </article>
     </div>
   );
 }

@@ -10,7 +10,17 @@ import os from "node:os";
 import path from "node:path";
 
 export const execFileP = promisify(execFile);
-export const W = 1920, H = 1080, FPS = 30;
+/**
+ * Render dims follow TRAILER_ASPECT (16:9 default; 9:16 vertical-native for
+ * reels/TikTok/Shorts; 1:1 square). generate/run.ts seeds the env from
+ * scenes.json's aspect before this module loads, so one screenplay renders
+ * native — no center-crop from landscape.
+ */
+const ASPECT_ENV = (process.env.TRAILER_ASPECT || "16:9").trim();
+export const RENDER_ASPECT = ASPECT_ENV === "9:16" || ASPECT_ENV === "1:1" ? ASPECT_ENV : "16:9";
+export const W = RENDER_ASPECT === "16:9" ? 1920 : 1080;
+export const H = RENDER_ASPECT === "9:16" ? 1920 : 1080;
+export const FPS = 30;
 const FONT = process.env.CONTENT_FONT || "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf";
 const FILTERS = (() => {
   try {
@@ -246,10 +256,35 @@ export async function burnOverlayTexts(
     const vf = usable
       .map(
         (c) =>
-          `drawtext=fontfile=${FONT}:text='${esc(c.text.trim())}':fontcolor=white:fontsize=54:borderw=4:bordercolor=black@0.95:x=(w-text_w)/2:y=h*0.14:enable='between(t,${Number(c.atSec).toFixed(2)},${Number(c.untilSec).toFixed(2)})'`,
+          `drawtext=fontfile=${FONT}:text='${esc(c.text.trim())}':fontcolor=white:fontsize=${Math.round(Math.min(W, H) * 0.05)}:borderw=4:bordercolor=black@0.95:x=(w-text_w)/2:y=h*0.14:enable='between(t,${Number(c.atSec).toFixed(2)},${Number(c.untilSec).toFixed(2)})'`,
       )
       .join(",");
     await execFileP("ffmpeg", ["-y", "-i", v, "-vf", vf, "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "copy", "-movflags", "+faststart", o], { maxBuffer: 1 << 27 });
+    return fs.readFileSync(o);
+  } finally { rmDir(dir); }
+}
+
+/** Trim a clip to exactly `seconds` from its start (re-encode for clean concat). */
+export async function trimClip(videoBuf: Buffer, seconds: number): Promise<Buffer> {
+  const dir = tmpDir("trim");
+  try {
+    const v = path.join(dir, "v.mp4"), o = path.join(dir, "o.mp4");
+    fs.writeFileSync(v, videoBuf);
+    await execFileP("ffmpeg", ["-y", "-i", v, "-t", seconds.toFixed(3),
+      "-c:v", "libx264", "-pix_fmt", "yuv420p", "-r", String(FPS), "-c:a", "aac", "-ar", "44100", o], { maxBuffer: 1 << 27 });
+    return fs.readFileSync(o);
+  } finally { rmDir(dir); }
+}
+
+/** Replace a master's audio entirely with a music track (track-first genres). */
+export async function replaceAudio(videoBuf: Buffer, trackBuf: Buffer): Promise<Buffer> {
+  const dir = tmpDir("track");
+  try {
+    const v = path.join(dir, "v.mp4"), t = path.join(dir, "t.mp3"), o = path.join(dir, "o.mp4");
+    fs.writeFileSync(v, videoBuf); fs.writeFileSync(t, trackBuf);
+    await execFileP("ffmpeg", ["-y", "-i", v, "-i", t,
+      "-map", "0:v:0", "-map", "1:a:0", "-c:v", "copy", "-c:a", "aac", "-ar", "44100",
+      "-shortest", "-movflags", "+faststart", o], { maxBuffer: 1 << 27 });
     return fs.readFileSync(o);
   } finally { rmDir(dir); }
 }

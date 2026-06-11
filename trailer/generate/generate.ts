@@ -27,9 +27,10 @@ import path from "node:path";
 import readline from "node:readline";
 import { renderScene } from "./renderScene.js";
 import { renderSequence } from "./renderSequence.js";
-import { assembleTrailer } from "./assemble.js";
+import { assembleTrailer, assembleTrackFirst } from "./assemble.js";
+import { resolveTrack } from "./musicTrack.js";
 import { resolveMusicBed } from "./audio.js";
-import { mixMusicBed, burnAss, burnOverlayTexts, stripAudio, probeDuration } from "./ffmpeg.js";
+import { mixMusicBed, burnAss, burnOverlayTexts, stripAudio, probeDuration, W, H } from "./ffmpeg.js";
 import { buildWordCues, remapOverlays, renderableSequences, toAss, toWordSrt, type CaptionStyle, type IncludedClip } from "./captions.js";
 import { genreSpec } from "../style/genres.js";
 import { uploadBufferToS3 } from "../../src/utils/falMedia.js";
@@ -93,7 +94,7 @@ async function packageMaster(master: Buffer, screenplay: Screenplay, outDir: str
     try {
       const cues = buildWordCues(included, { includeCaptions: genre.musicMode === "track-first" });
       if (cues.length > 0) {
-        const ass = toAss(cues, CAPTION_STYLE);
+        const ass = toAss(cues, CAPTION_STYLE, W, H);
         fs.writeFileSync(path.join(outDir, "subtitles.ass"), ass, "utf8");
         fs.writeFileSync(path.join(outDir, "subtitles.words.srt"), toWordSrt(cues), "utf8");
         registerRunArtifact(outDir, { kind: "subtitle", label: "Karaoke caption track (ASS)", path: "subtitles.ass" });
@@ -286,17 +287,37 @@ async function generateFromSequences(screenplay: Screenplay, outDir: string, opt
     const probed = await probeDuration(buf);
     included.push({ seq: sequences[i], seconds: probed > 0 ? probed : undefined });
   }
-  const final = await assembleTrailer(ordered, {
+  const endCardOpts = {
     countdown: screenplay.endCard?.countdown || "",
-    musicBed,
     appendEndCard: skippedEndCards.length > 0 || !allSequences.some(isScriptedEndCard),
     endCardSeconds: skippedEndCards.reduce((sum, seq) => sum + Math.max(0, Number(seq.durationSec) || 0), 0) || undefined,
-  });
+  };
+
+  // TRACK-FIRST genres (anthem / vibe edit): generate the song, extract its
+  // beat grid, cut the clips TO the beats, and replace native audio with the
+  // track. Caption timing then follows the TRIMMED clip durations.
+  let final: Buffer | null = null;
+  let packagingClips = included;
+  if (genreSpec(screenplay.genre).musicMode === "track-first") {
+    const track = await resolveTrack(screenplay, screenplay.totalSeconds || 30);
+    if (track) {
+      console.log(`   track-first: ${track.source} track ${track.seconds.toFixed(1)}s @ ${track.bpm}bpm (${track.beats.length} beats)`);
+      const cut = await assembleTrackFirst(ordered, track, endCardOpts);
+      if (cut) {
+        final = cut.master;
+        packagingClips = included.map((c, i) => ({ ...c, seconds: cut.clipSeconds[i] ?? c.seconds }));
+      }
+    }
+    if (!final) console.log("   track-first failed — falling back to standard assembly");
+  }
+  if (!final) {
+    final = await assembleTrailer(ordered, { ...endCardOpts, musicBed });
+  }
   if (!final) { console.log("   assembly produced nothing"); return null; }
   const finalPath = path.join(outDir, "final.mp4");
   fs.writeFileSync(finalPath, final);
   registerRunArtifact(outDir, { kind: "video", label: "Final assembled trailer", path: "final.mp4" });
-  await packageMaster(final, screenplay, outDir, included);
+  await packageMaster(final, screenplay, outDir, packagingClips);
   completeRunStage(outDir, "assemble:final", {
     outputFiles: ["final.mp4"],
     notes: [`Assembled ${ordered.length} sequence clips.`],

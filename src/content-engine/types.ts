@@ -22,6 +22,8 @@ export interface HashBeastLike {
 }
 
 export interface Shot {
+  /** LOOP bookkeeping: opens|raises|head-fake|closes "<question>" — attention architecture. */
+  loop?: string;
   n: number;
   beat: string;
   durationSec: number;
