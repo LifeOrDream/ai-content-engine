@@ -254,7 +254,8 @@ const MONTAGE_CAPTIONS = [
   { text: "BET SOL", start: 1.6, end: 3.2 },
   { text: "60 SECONDS A ROUND", start: 3.2, end: 4.8 },
   { text: "WIN → MINE degenBTC", start: 4.8, end: 6.4 },
-  { text: "THE WAR WRITES A SHOW — WITH YOUR CHARACTER", start: 6.4, end: 8.0 },
+  // ≤ ~37 chars at fontsize 46 / 1080w — the full "WITH YOUR CHARACTER" suffix clips
+  { text: "THE WAR WRITES A SHOW — YOU'RE IN IT", start: 6.4, end: 8.0 },
 ];
 
 // ─── tiny ledger so the report can prove grounding + estimate spend ─────────
@@ -504,12 +505,16 @@ async function stageAssemble(ffmpeg: typeof import("./ffmpeg.js")) {
   console.log(`   ${clips.length} clips, ${total.toFixed(1)}s — seq starts: ${order.map((n) => `${n}@${starts[n].toFixed(1)}`).join(" ")}`);
 
   // 3. text card composite over the silent ticker shot (REAL machinery, not generated-in-image)
+  const DEBUG_TAPS = process.env.MOONSHOT_DEBUG_TAPS === "true";
+  const tap = (name: string, buf: Buffer) => { if (DEBUG_TAPS) fs.writeFileSync(path.join(OUT, `debug_${name}.mp4`), buf); };
   process.stdout.write("   concat + text card… ");
   let master = await ffmpeg.concat(clips);
+  tap("concat", master);
   master = await burnCenteredCard(ffmpeg, master, [
     { text: "SPACEX IPO'D THE ROCKET.", at: starts[4] + 0.7, until: starts[5] - 0.15, y: 0.40, color: "white", size: Math.round(W * 0.066) },
     { text: "WE'RE IPO-ING THE FUEL.", at: starts[4] + 2.6, until: starts[5] - 0.15, y: 0.48, color: "0xF7931A", size: Math.round(W * 0.072) },
   ]);
+  tap("card", master);
   console.log("✓");
 
   // 4. the segmented score + VO laid over ducked native audio
@@ -523,12 +528,14 @@ async function stageAssemble(ffmpeg: typeof import("./ffmpeg.js")) {
     ...VO_LINES.map((l) => ({ file: `vo_${l.id}.mp3`, at: starts[l.at.seq] + l.at.offset, vol: 1.0 })),
   ];
   master = await mixOverlays(ffmpeg, master, overlays, 0.45 /* native duck */);
+  tap("mix", master);
   console.log("✓");
 
   // 5. brand badge + loudnorm → final
   process.stdout.write("   brand + loudnorm… ");
   const { brandVideo } = await import("../../src/utils/videoBrand.js");
   try { master = await brandVideo(master); } catch { /* ship unbranded */ }
+  tap("brand", master);
   try { master = await ffmpeg.loudnormalize(master); } catch { /* ship un-normalized */ }
   const finalPath = path.join(OUT, "final.mp4");
   fs.writeFileSync(finalPath, master);
