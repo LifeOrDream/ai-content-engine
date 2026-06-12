@@ -1928,7 +1928,7 @@ export interface RarityTier {
 export const RARITY_TIERS: RarityTier[] = [
   {
     id: "common",
-    name: "Surface Ore",
+    name: "Surface Dust",
     rank: 0,
     colorLanguage: "worn steel grey with a soft paper-white core",
     particleLanguage: "a few slow dust motes drifting up and fading fast",
@@ -1961,7 +1961,7 @@ export const RARITY_TIERS: RarityTier[] = [
     name: "Motherlode",
     rank: 3,
     colorLanguage: "molten bitcoin gold with deep amber undertones",
-    particleLanguage: "dense golden sparks fountaining upward like struck ore",
+    particleLanguage: "dense golden sparks fountaining upward like a struck dBTC seam",
     crackLight: "furnace-gold light blazing from every crack, heat shimmer at the edges",
     revealFlare: "a rolling golden eruption that rains slow sparks",
     fanfareTier: "major",

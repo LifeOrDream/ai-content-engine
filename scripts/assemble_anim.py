@@ -9,7 +9,7 @@ recur:
     and internal dark outlines inside the character are preserved.
   - frame-edge bleed (a limb from a neighbouring cell): removed by dropping any
     blob that touches the cell's left/right edge or is tiny, while keeping legit
-    detached items near the character (e.g. the ore block).
+    detached items near the character (e.g. the dBTC block).
 
 Then: union-bbox tight crop -> square canvas (DP container) -> optimized APNG
 with per-frame disposal=BACKGROUND + blend=SOURCE (clean frame replacement, no

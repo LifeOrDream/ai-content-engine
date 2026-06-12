@@ -75,7 +75,7 @@ const LORE: GenreSpec = {
 - ONE narrator voice across the whole video (a single character telling the story TO the viewer — confession, war story, origin myth). Other characters appear silently in the visuals.
 - 5-9 beats, 30-60 seconds. The narrator's spoken track is nearly continuous (storytime cadence ~2.3 words/sec, short punchy sentences) — write it as one monologue distributed across the beats.
 - Visuals are cinematic stills-energy: slow reveals, held compositions, one detail per beat. The narration says the feeling; the screen shows the evidence.
-- The payoff is a secret or reframe ("the war didn't start over the ore"). Cliffhanger: the narrator knows something they refuse to say yet.`,
+- The payoff is a secret or reframe ("the war didn't start over the dBTC"). Cliffhanger: the narrator knows something they refuse to say yet.`,
   musicMode: "bed",
   captionMode: "karaoke",
   durationBand: [30, 60],

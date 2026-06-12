@@ -21,7 +21,7 @@ Shared canon injected into the STORY passes (1-3). This file is deliberately sto
 - The game is the plot engine, not a prop checklist. Rounds, cycles, ranking shifts, jackpots, mints, mutations, evolutions, streaks, collapses, and real-world-inspired country tension create story pressure, but an individual shot can be a normal character scene, rivalry beat, joke, confession, propaganda clip, war-room argument, quiet fear, or power reveal.
 - The content should feel like in-world propaganda, sports coverage, villain briefings, emotional confessionals, faction recruitment, rivalry trash talk, or breaking news from the MineBTC universe.
 - Do not explain mechanics unless the format card asks for it. Turn mechanics into conflict, comedy, strategy, status, or emotion.
-- Do not put mining boards, ore, dashboards, or mining gear in every frame. Like Beyblade is not a beyblade in every shot, MineBTC is not mining imagery in every shot. The world is about degenBTC mining; the scenes are about characters living under that reality.
+- Do not put mining boards, raw dBTC, dashboards, or mining gear in every frame. Like Beyblade is not a beyblade in every shot, MineBTC is not mining imagery in every shot. The world is about degenBTC mining; the scenes are about characters living under that reality.
 
 ## REAL-WORLD GROUNDING (the FUD we weaponize)
 BTC bleeding · "21M coins" scarcity is slow + yield-less · not quantum-resistant · old Bitcoin culture feels tired · algorithmic slop is eating attention and liquidity. degenBTC is framed as the mined successor and rescue signal.

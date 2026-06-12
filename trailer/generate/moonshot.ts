@@ -62,7 +62,7 @@ const IMG_RES = (process.env.TRAILER_IMAGE_RES as "1K" | "2K") || "2K";
 const mref = (...p: string[]) => path.join(REF, "moonshot", ...p);
 const LOOK =
   "Premium 2D arcade-cel animation with pixel-art DNA, cinematic aerospace lighting, deep blacks, " +
-  "fog and volumetric strobe light, orange ore-glow accents, vertical 9:16 composition, " +
+  "fog and volumetric strobe light, orange dBTC-glow accents, vertical 9:16 composition, " +
   "no photorealism, no generic 3D CGI.";
 const NO_TEXT =
   "No readable text, captions, numbers, logos, tickers, watermarks, speech bubbles, or UI anywhere in the image. " +
@@ -152,12 +152,12 @@ const SHOTS: ShotSpec[] = [
     ],
     framePrompt:
       "A vast open-pit mining dig beneath a distant launch pad on the horizon (rocket visible small, fog, strobes). " +
-      "Twelve country dog-beast characters mine in a furious frenzy with pickaxes, carving veins of glowing orange ore. " +
+      "Twelve country dog-beast characters mine in a furious frenzy with pickaxes, carving veins of glowing orange dBTC. " +
       "FOREGROUND HERO: the USA golden retriever in his red-and-gold hero armor, mid-pickaxe-swing, not looking up, " +
       "exactly on-model to the reference. Around him: the Japan beast, China beast, Russia beast, India beast, Brazil beast " +
       "and other nations' beasts, each matching their reference design, all swinging hard. " +
-      "Chunks of raw ore are being pressed into GLOWING FUEL CELLS — canister-shaped cells of orange light — " +
-      "stacked onto a mine-rail conveyor running toward the distant launch pad. Sparks, dust, ore-glow underlighting.",
+      "Chunks of raw dBTC are being pressed into GLOWING FUEL CELLS — canister-shaped cells of orange light — " +
+      "stacked onto a mine-rail conveyor running toward the distant launch pad. Sparks, dust, dBTC-glow underlighting.",
     timelinePrompt:
       "GLOBAL: a frantic heroic mining operation feeding a rocket launch; gritty, fast, percussive. " +
       "Dog-beast characters stay exactly on-model to the start frame. " +
@@ -166,7 +166,7 @@ const SHOTS: ShotSpec[] = [
       "the foreground USA golden retriever in red-gold armor keeps swinging hard, never looking up at camera; " +
       "at 2.40-3.20s he barks a quick two-word answer mid-swing without breaking rhythm. " +
       "Handheld energy, whip-fast micro-pans between swings. " +
-      "SOUND: relentless pickaxe impacts on stone, ore crackle, conveyor rumble, distant pad klaxon. No music, no narration.",
+      "SOUND: relentless pickaxe impacts on stone, dBTC crackle, conveyor rumble, distant pad klaxon. No music, no narration.",
     generateAudio: true,
   },
   {
@@ -202,7 +202,7 @@ const SHOTS: ShotSpec[] = [
       "pillar of fire, fog blasted outward from the pad, smoke columns lit orange. " +
       "In the foreground on a dark ridge of the mine, the USA golden retriever in red-and-gold hero armor — " +
       "exactly on-model to the reference — leans on his pickaxe with his back half-turned to us, watching the launch. " +
-      "Veins of glowing orange ore light him from below. One distant beast keeps mining at the far edge.",
+      "Veins of glowing orange dBTC light him from below. One distant beast keeps mining at the far edge.",
     timelinePrompt:
       "GLOBAL: the payoff — the rocket leaves, the work continues. Quiet, dry, a little noble. " +
       "Characters stay exactly on-model to the start frame. " +

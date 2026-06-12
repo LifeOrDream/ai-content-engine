@@ -61,7 +61,7 @@ callouts:
 
 | Tier | Name | Hue family |
 | --- | --- | --- |
-| common | Surface Ore | worn steel / paper-white |
+| common | Surface Dust | worn steel / paper-white |
 | uncommon | Live Conduit | signal cyan |
 | rare | Deep Vein | royal violet |
 | epic | Motherlode | molten bitcoin gold |

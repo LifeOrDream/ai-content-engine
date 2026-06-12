@@ -289,7 +289,7 @@ check("mutation dialogue also picks up the rivalry", mutPrompt.includes("CANON R
 
 // ─── C2 · emotional arc gating ───────────────────────────────────────────────
 console.log("\nC2 · emotional arc");
-const arc = "starts dejected, spots the ore vein, ends determined";
+const arc = "starts dejected, spots the dBTC vein, ends determined";
 check("arc suppressed for low-stage beasts", emotionalArcDirective(arc, 2) === "");
 check("arc active for stage 5", emotionalArcDirective(arc, 5).includes(arc));
 check("arc lands frame-by-frame", emotionalArcDirective(arc, 7).includes("final frame lands it"));

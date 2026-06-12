@@ -306,7 +306,7 @@ export function buildChapterAnatomyFallback(
   }
   if (recap.length < 3) {
     recap.push({
-      beat: `The ranks reset, the ore keeps glowing, and nobody in the dens is sleeping tonight.`,
+      beat: `the ranks reset, the dBTC keeps glowing, and nobody in the dens is sleeping tonight.`,
       callouts: [],
     });
   }

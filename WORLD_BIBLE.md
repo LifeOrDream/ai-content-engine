@@ -230,7 +230,7 @@ glow" must read identically everywhere:
 
 | Tier | Name | Hue family | Fanfare band |
 |------|------|------------|--------------|
-| common | Surface Ore | worn steel / paper-white | minor |
+| common | Surface Dust | worn steel / paper-white | minor |
 | uncommon | Live Conduit | signal cyan | minor |
 | rare | Deep Vein | royal violet | major |
 | epic | Motherlode | molten bitcoin gold | major |

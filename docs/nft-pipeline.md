@@ -51,7 +51,7 @@ The chroma-strip method, used for the website's per-NFT mining / win / lose loop
 
 1. Ask the image model for ONE wide 16:9 image containing a horizontal strip of `HASHBEAST_ANIM_FRAMES` (default 5) keyframes of the SAME character on flat magenta (`#FF00FF`) — grounded on the beast's canonical full body + DP as reference images.
 2. **Identity gate**: Gemini `validateSameCharacter` compares the strip to the DP; up to 2 attempts, otherwise the loop is skipped (best-effort, never fails the job).
-3. **Deterministic assembly** (`scripts/assemble_anim.py`, called via `src/utils/animationAssembly.ts`): slice the strip into equal cells → flood-fill border-connected background of ANY color (robust even when the model ignores magenta) + kill stray magenta → drop edge-bleed blobs while keeping legit detached props (the ore block) → union-bbox tight crop for stable framing → place on a square canvas (default 512px, char fills ~94%) → save an optimized APNG with per-frame `disposal=BACKGROUND` + `blend=SOURCE` (frames replace, never accumulate) → optional boomerang for a seamless ping-pong loop.
+3. **Deterministic assembly** (`scripts/assemble_anim.py`, called via `src/utils/animationAssembly.ts`): slice the strip into equal cells → flood-fill border-connected background of ANY color (robust even when the model ignores magenta) + kill stray magenta → drop edge-bleed blobs while keeping legit detached props (the dBTC block) → union-bbox tight crop for stable framing → place on a square canvas (default 512px, char fills ~94%) → save an optimized APNG with per-frame `disposal=BACKGROUND` + `blend=SOURCE` (frames replace, never accumulate) → optional boomerang for a seamless ping-pong loop.
 
 Why APNG and not animated WebP: ffmpeg's libwebp encoder has no frame-disposal control, so transparent frames stack over each other. APNG disposal semantics make each frame cleanly replace the last.
 
@@ -65,7 +65,7 @@ Power clips render the beast's **named country × lane technique** (`techniqueFo
 
 #### Emotional arc (optional, higher stages only)
 
-`arc: "starts dejected, spots the ore vein, ends determined"` threads a frame-by-frame emotional-arc directive into the strips — gated to stage >= 4 (`emotionalArcDirective`); silently ignored for lower-stage beasts.
+`arc: "starts dejected, spots the dBTC vein, ends determined"` threads a frame-by-frame emotional-arc directive into the strips — gated to stage >= 4 (`emotionalArcDirective`); silently ignored for lower-stage beasts.
 
 ### 3. `nft.mutation_content` — mutation event content
 

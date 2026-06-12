@@ -345,14 +345,14 @@ export const PERFORMANCE_BY_BAND: Record<PerformanceBand, StagePerformance> = {
   },
   elite: {
     mining:
-      "commanding, powerful strikes — each blow lands with shockwave authority, the ore seems to obey before it cracks",
+      "commanding, powerful strikes — each blow lands with shockwave authority, the dBTC seam seems to obey before it cracks",
     win: "a measured triumphant flourish — banner-pose held still, letting the crowd come to it",
     lose: "wounded-commander pride — jaw set, one slow exhale, straightening its gear, eyes burning for the rematch",
     presence: "gravity; the frame organizes itself around its stance",
   },
   ascendant: {
     mining:
-      "barely moves — minimal godlike gestures; a flick of one paw and the ore splits itself open in glowing seams",
+      "barely moves — minimal godlike gestures; a flick of one paw and the raw dBTC splits itself open in glowing seams",
     win: "barely acknowledges victory — a slow blink, the faintest nod, the aura flares once and settles",
     lose: "a flicker of stillness — the light around it dims a shade; it studies the loss like a puzzle, posture utterly unshaken",
     presence: "serene inevitability; emotion shown in millimeters",

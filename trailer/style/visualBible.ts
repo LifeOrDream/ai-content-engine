@@ -56,9 +56,9 @@ MINEBTC VISUAL CANON:
 - Breed canon: every country has exactly four collection breeds from the backend DNA registry. Trailer characters can be evolved, legendary, better dressed, and more powerful than current minted examples, but their body/silhouette must stay inside that country's breed set. Never invent a random breed just because it looks cool.
 - Character silhouettes: every beast needs a memorable read at thumbnail size: breed shape, faction color, headwear, weapon/tool, power core, and one comic personality tell.
 - Gear language: clothing and equipment should feel collectible and game-readable: embroidered jackets, faction uniforms, mining armor, shoulder plates, belts, medals, command pickaxes, staffs, goggles, charms, drones, companions, abstract displays, glowing gauntlets, and country-specific motifs.
-- World language: scenes live in a hidden HashBeast layer parallel to the human world. Use mining floors, glowing degenBTC ore, arena boards, and faction launch chambers only when the shot's story source needs them. Also use normal show locations: faction apartments, late-night studios, war rooms, streets, diners, temples, trading dens, stadium tunnels, labs, bunkers, locker rooms, press rooms, propaganda stages, rooftops, and quiet emotional spaces.
+- World language: scenes live in a hidden HashBeast layer parallel to the human world. Use mining floors, glowing raw degenBTC, arena boards, and faction launch chambers only when the shot's story source needs them. Also use normal show locations: faction apartments, late-night studios, war rooms, streets, diners, temples, trading dens, stadium tunnels, labs, bunkers, locker rooms, press rooms, propaganda stages, rooftops, and quiet emotional spaces.
 - Environment language: build actual places first, powers/artifacts second. Prefer physical lived-in details like lamps, portraits, books, marked furniture, staffs, crystal jars, old machines, hidden rooms, cables, utensils, rugs, desks, chairs, tools, windows, and country-specific architecture. Avoid floating cube/box spam, hologram clutter, and generic game-state backgrounds unless the scene explicitly needs a surreal arena/reveal.
-- Color: keep it bright and high-saturation. Use golden sunrise/ore light, cyan mining energy, faction glows, emerald/yellow blockchain circuitry, and strong rim lights. Avoid flat black slides, murky shadows, and washed-out generic AI fantasy.
+- Color: keep it bright and high-saturation. Use golden sunrise/dBTC-vein light, cyan mining energy, faction glows, emerald/yellow blockchain circuitry, and strong rim lights. Avoid flat black slides, murky shadows, and washed-out generic AI fantasy.
 `.trim();
 
 export const MINEBTC_VIDEO_GRAMMAR = `
@@ -76,9 +76,9 @@ export const CROSS_FORMAT_VIDEO_RULES = `
 03 · KEY CROSS-FORMAT CONSISTENCIES:
 - Controlled camera is the default. Use locked tripod, locked frontal, slow push, lateral track, or snap cut. Avoid random handheld drift, floating AI camera, constant zooming, and unmotivated orbit shots.
 - Deep readable staging beats shallow bokeh. The viewer must understand character, location, power/status, and reaction layer at thumbnail size.
-- Shot hierarchy is mandatory: primary character/action first, supporting reaction second, world clue third. Do not overload every shot with mechanics, boards, ore, logos, UI, and power FX.
+- Shot hierarchy is mandatory: primary character/action first, supporting reaction second, world clue third. Do not overload every shot with mechanics, boards, raw dBTC, logos, UI, and power FX.
 - Keep MineBTC as high-res 2D arcade-cel / collectible key art with pixel DNA. Reject raw pixelated mud, photoreal 3D, realistic fur, generic anime, smoky grimdark, and glossy Unreal-engine crypto ads.
-- Backgrounds should carry scene-specific story, not a mining quota. A bedroom scene can show a cracked faction poster; a press room can show nervous microphones; a diner can show country captains arguing over pancakes; a war room can show maps; a mining chamber can show ore only when it is the scene.
+- Backgrounds should carry scene-specific story, not a mining quota. A bedroom scene can show a cracked faction poster; a press room can show nervous microphones; a diner can show country captains arguing over pancakes; a war room can show maps; a mining chamber can show raw dBTC only when it is the scene.
 - Environments should not default to floating boxes, floating cubes, holographic dashboards, or abstract game-state clutter. If the story is not explicitly inside the arena or a power reveal, make the location feel like an actual room/street/workplace with subtle faction artifacts or evolved gear.
 - Country identity must read through costume, palette, props, posture, accent flavor in delivery, and faction behavior. Never use real named politicians or real flags as the only joke.
 - Power FX must be specific to the character and gear: color, source object, path, impact, and reaction. "Blue lightning aura" is too generic unless it is tied to the beast's role and personality.
@@ -624,7 +624,7 @@ APPEND TO IMAGE / KEYFRAME PROMPTS:
 --no unreadable fast action, no fragmented punch montage, no generic power-up spam, no photoreal invisible CGI,
 --no redesigning the HashBeast: do not change breed, face, fur markings, eye color, signature gear lineage, country role, or evolution identity,
 --no non-canon country breeds: visible country HashBeasts must use that country's backend DNA breed set, even when evolved or legendary,
---no mining boards, ore, token dashboards, or crypto UI unless the shot story explicitly requires them,
+--no mining boards, raw dBTC, token dashboards, or crypto UI unless the shot story explicitly requires them,
 --no readable text, captions, token tickers, URLs, watermarks, logos, speech bubbles, fake UI labels, signatures, or real-world brand marks inside the generated image,
 --no real named politicians, no literal news screenshots, no real political slogans, no offensive caricature,
 --no tourist-monument spam as country identity; use lived-in micro-details instead,
@@ -690,7 +690,7 @@ export const MINEBTC_RENDER_STYLE_BLOCK = `
 MINEBTC RENDER STYLE BLOCK:
 - High-resolution 2D arcade-cel HashBeast animated-show frame with pixel-art DNA: crisp outlines, clean cel shading, expressive dog face, readable silhouette, premium MineBTC banner-style light.
 - Preserve the attached character identity exactly: same breed, face, fur markings, eye feel, country role, gear lineage, and personality. Do not redesign during this shot.
-- Scene-first show logic: render the stated character moment/location. Do not add mining boards, ore, dashboards, token UI, or crypto clutter unless the shot explicitly asks.
+- Scene-first show logic: render the stated character moment/location. Do not add mining boards, raw dBTC, dashboards, token UI, or crypto clutter unless the shot explicitly asks.
 - Camera must follow the shot camera codes: locked/level/readable by default, center-safe for social crops, no random drift, no Dutch tilt, no shallow bokeh unless a reveal close-up is explicitly requested.
 - Country identity comes from lived-in micro-details in the shot notes: furniture, floors, utensils, textiles, lights, weather, street objects, office clutter, props. No monument/flag spam.
 - Emotional register and palette card in the shot notes control tone: MR3 gets quieter and grounded, MR4 keeps silhouette before FX, MR6 plays economic satire dead-serious, MPAL cards keep color readable and not muddy.
@@ -716,7 +716,7 @@ ACTION-COMEDY DIRECTOR CANON FOR MINEBTC:
 - Comedy timing: hold the deadpan frame slightly too long, then cut hard to an impact/reaction. The laugh comes from the cut and the contrast.
 - Performance: hero HashBeast often stays deadpan or overconfident; supporting beasts/crowds react like synchronized cartoon chaos.
 - Power reveal: stillness first, silence or reduced motion, low/frontal heroic framing, then one clean impossible action with readable environment damage.
-- Scene density: every background should carry scene-specific story, not random detail. Use faction symbols, country props, spectators, nervous officials, bedroom clutter, diner objects, studio lights, maps, training equipment, or one small visual joke. Use mining boards, jackpot numbers, ore, and arena UI only when the shot is actually about the game state.
+- Scene density: every background should carry scene-specific story, not random detail. Use faction symbols, country props, spectators, nervous officials, bedroom clutter, diner objects, studio lights, maps, training equipment, or one small visual joke. Use mining boards, jackpot numbers, raw dBTC, and arena UI only when the shot is actually about the game state.
 - Motion prompts should be physical and simple: what moves, who reacts, what power effect triggers, what the camera does. Never ask the video model to invent new designs mid-shot.
 `.trim();
 
@@ -952,7 +952,7 @@ export function buildTrailerKeyframePrompt(shot: Shot, opts: { hasDialogue: bool
   return [
     "Create the hero keyframe for a MineBTC simulated-world trailer/story shot.",
     "This frame is part of a bingeable animated MineBTC media world: degenBTC myth, country rivalry, recurring HashBeast characters, faction drama, comedy, emotion, and gameplay-as-story.",
-    "Do not force mining props, ore, dashboards, or arena boards into the frame unless the shot notes specifically call for them.",
+    "Do not force mining props, raw dBTC, dashboards, or arena boards into the frame unless the shot notes specifically call for them.",
     "The attached reference image(s) are the identity anchor; keep the same character identity, breed, fur markings, face, colors, and signature gear lineage.",
     characters ? `On-screen characters: ${characters}.` : "",
     `Scene notes: ${shotNotes(shot)}.`,

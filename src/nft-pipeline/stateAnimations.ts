@@ -20,7 +20,7 @@
  *   wrestles an oversized tool and over-celebrates; an Ascended barely moves
  *   and barely acknowledges victory; losses scale puppy-despair →
  *   wounded-commander pride.
- * - An optional EMOTIONAL ARC directive ("starts dejected, spots the ore vein,
+ * - An optional EMOTIONAL ARC directive ("starts dejected, spots the dBTC vein,
  *   ends determined") threads through the strip — gated to higher-stage beasts
  *   (stage >= 4) via emotionalArcDirective.
  *
@@ -73,7 +73,7 @@ export const STATE_LOOPS: StateLoop[] = ["mining", "win", "lose"];
 /** Generic (profile-free) state actions — fallback when no profile resolves. */
 export const STATE_ACTION: Record<StateLoop, string> = {
   mining:
-    "actively MINING — swinging a glowing pickaxe at a chunk of crypto ore / working a mining rig, focused effort, repeating work motion",
+    "actively MINING — swinging a glowing pickaxe at a chunk of raw dBTC / working a mining rig, focused effort, repeating work motion",
   win: "CELEBRATING A VICTORY — arms or paws thrown up triumphantly, a proud cheer, hyped winner energy",
   lose: "REELING FROM A LOSS — slumping, shoulders down, deflated and dejected, a sad defeated reaction",
 };
@@ -178,8 +178,8 @@ export function stateActionFor(state: StateLoop, p: BeastProfile): string {
   const performance = stagePerformance(p.evolutionStage, state);
   if (state === "mining") {
     const base = p.isWizard
-      ? `magically MINING glowing crypto-ore — channeling crackling arcane spell energy from its paws to crack the ore open, ${p.factionName} sorcery style, NO pickaxe`
-      : `MINING glowing crypto-ore with ${MINING_TOOL[p.factionCode] || "a sturdy pickaxe"} — swinging it at the ore with focused ${p.factionName} grit`;
+      ? `magically MINING glowing raw dBTC — channeling crackling arcane spell energy from its paws to crack the dBTC seam open, ${p.factionName} sorcery style, NO pickaxe`
+      : `MINING glowing raw dBTC with ${MINING_TOOL[p.factionCode] || "a sturdy pickaxe"} — swinging it at the dBTC seam with focused ${p.factionName} grit`;
     return `${base}. Stage performance: ${performance}`;
   }
   if (state === "win") {
@@ -311,7 +311,7 @@ export interface NftStateAnimationsInput {
    */
   knownTechniques?: string[];
   /**
-   * Optional emotional arc for the strips ("starts dejected, spots the ore
+   * Optional emotional arc for the strips ("starts dejected, spots the dBTC
    * vein, ends determined"). Gated to higher-stage beasts (stage >= 4) —
    * silently ignored below that band.
    */
