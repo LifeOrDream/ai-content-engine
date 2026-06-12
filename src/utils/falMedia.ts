@@ -465,7 +465,10 @@ export async function lipSyncVideo(
  */
 async function generateAudioClip(model: string, prompt: string, seconds: number): Promise<GeneratedMedia> {
   const secs = Math.min(47, Math.max(1, Math.round(seconds)));
-  const data = await falRun(model, { prompt, seconds_total: secs }, 120_000);
+  // Stable Audio's queue can sit IN_PROGRESS well past 2 minutes when cold —
+  // keep the default but let ops widen it without a code change.
+  const timeoutMs = Math.max(30_000, Number(process.env.FAL_AUDIO_TIMEOUT_MS || 120_000));
+  const data = await falRun(model, { prompt, seconds_total: secs }, timeoutMs);
   const url =
     data?.audio_file?.url || data?.audio?.url || data?.audio_url || data?.url || data?.audio_file;
   if (!url || typeof url !== "string") throw new Error(`audio gen (${model}) returned no url`);

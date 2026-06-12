@@ -36,6 +36,12 @@ import type {
   ChapterCycleFacts,
 } from "../content-engine/chapterWriter.js";
 import type { ChapterCanonInput } from "../../trailer/world/storyMemory.js";
+import type {
+  RitualClaimRollInput,
+  RitualContentResult,
+  RitualLootboxRevealInput,
+} from "../nft-pipeline/ritual.js";
+import type { AudioIdentityCueResult } from "../world/audioIdentity.js";
 
 export const CONTENT_ENGINE_QUEUE =
   process.env.CONTENT_ENGINE_QUEUE || "minebtc-content-engine";
@@ -67,7 +73,18 @@ export type ContentEngineJobKind =
   // (budget-gate like other text/content jobs) + the canonize gate that folds
   // a PUBLISHED chapter into story memory.
   | "chapter.write"
-  | "chapter.canonize";
+  | "chapter.canonize"
+  // CASINO RITUALS (Phase F1/F2): staged reveal definitions (acts + rarity
+  // light language + sound ids), NOT toasts. Deterministic + free by default;
+  // includeDialogue opts into the paid voice path — budget-gate dispatch
+  // EXACTLY like nft.mutation_content. See docs/rituals-and-audio.md.
+  | "ritual.lootbox_reveal"
+  | "ritual.claim_roll"
+  // AUDIO IDENTITY (Phase F4): generate ONE catalog cue via the stable-audio
+  // path. Flag-gated engine-side (AUDIO_IDENTITY_GENERATION_ENABLED) and
+  // budget-gated backend-side (category "audio"). Cues are generated once and
+  // referenced by id — never mass-generate.
+  | "audio.identity_cue";
 
 export interface PlanEventInput {
   event: IncomingEventLike;
@@ -158,6 +175,11 @@ export interface ChapterCanonizeResult {
   videoNo: number;
 }
 
+export interface AudioIdentityCueJobInput {
+  /** Catalog cue id (src/world/audioIdentity.ts ALL_AUDIO_CUE_IDS). */
+  cueId: string;
+}
+
 export interface ContentEngineJobPayloadMap {
   plan_event: PlanEventInput;
   plan_pulse: PlanPulseInput;
@@ -176,6 +198,9 @@ export interface ContentEngineJobPayloadMap {
   "nft.mint_intro": NftMintIntroInput;
   "chapter.write": ChapterWriteInput;
   "chapter.canonize": ChapterCanonizeInput;
+  "ritual.lootbox_reveal": RitualLootboxRevealInput;
+  "ritual.claim_roll": RitualClaimRollInput;
+  "audio.identity_cue": AudioIdentityCueJobInput;
 }
 
 export interface ContentEngineJobResultMap {
@@ -196,6 +221,9 @@ export interface ContentEngineJobResultMap {
   "nft.mint_intro": NftMintIntroResult;
   "chapter.write": ChapterAnatomy;
   "chapter.canonize": ChapterCanonizeResult;
+  "ritual.lootbox_reveal": RitualContentResult;
+  "ritual.claim_roll": RitualContentResult;
+  "audio.identity_cue": AudioIdentityCueResult;
 }
 
 export type ContentEngineJobPayload<K extends ContentEngineJobKind = ContentEngineJobKind> = {

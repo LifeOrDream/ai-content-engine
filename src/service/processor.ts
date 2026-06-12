@@ -28,6 +28,11 @@ import { generateMomentContent } from "../nft-pipeline/momentContent.js";
 import { generateCycleSummary } from "../nft-pipeline/cycleSummary.js";
 import { generateMintIntro } from "../nft-pipeline/mintIntro.js";
 import {
+  generateClaimRollCeremony,
+  generateLootboxRevealRitual,
+} from "../nft-pipeline/ritual.js";
+import { generateAudioIdentityCue } from "../world/audioIdentity.js";
+import {
   buildChapterAnatomyFallback,
   buildChapterWriterPrompt,
   lintChapterAnatomy,
@@ -235,6 +240,18 @@ export async function processContentEngineJob<K extends ContentEngineJobKind>(
       const memory = canonizeChapter(input.chapter);
       const entry = memory.videos.find((v) => v.id === `chapter-${input.chapter.warId}`);
       return { ok: true, videoNo: entry?.videoNo ?? memory.currentVideoNo } as ContentEngineJobResultMap[K];
+    }
+    case "ritual.lootbox_reveal": {
+      const input = payload.input as ContentEngineJobPayload<"ritual.lootbox_reveal">["input"];
+      return (await generateLootboxRevealRitual(input)) as ContentEngineJobResultMap[K];
+    }
+    case "ritual.claim_roll": {
+      const input = payload.input as ContentEngineJobPayload<"ritual.claim_roll">["input"];
+      return (await generateClaimRollCeremony(input)) as ContentEngineJobResultMap[K];
+    }
+    case "audio.identity_cue": {
+      const input = payload.input as ContentEngineJobPayload<"audio.identity_cue">["input"];
+      return (await generateAudioIdentityCue(input.cueId)) as ContentEngineJobResultMap[K];
     }
     default:
       throw new Error(`Unknown content-engine job kind: ${(payload as any)?.kind}`);

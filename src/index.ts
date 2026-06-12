@@ -16,3 +16,7 @@ export * as worldProgression from "./world/progression.js";
 // with silhouette language, movement grammar, voice timbre modifiers,
 // per-country skinning, and starter breed packs.
 export * as worldBaseTypes from "./world/baseTypes.js";
+// AUDIO IDENTITY — the ownable sound spec: 12 country leitmotifs, evolution
+// stings per stage band, story themes, and the casino-ritual SFX catalog,
+// all generated through the stable-audio path and referenced by cue id.
+export * as worldAudioIdentity from "./world/audioIdentity.js";

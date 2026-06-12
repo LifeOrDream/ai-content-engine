@@ -62,6 +62,25 @@ import {
 import { buildHashBeastPrompt } from "../src/prompts/index.js";
 import { comparisonPrompt } from "../src/nft-pipeline/identity.js";
 import { buildVoiceDesignPrompt, voiceKeyFor } from "../src/nft-pipeline/voice.js";
+import { RARITY_TIERS, rarityTier, rarityTierForStage } from "../src/world/bible.js";
+import {
+  ALL_AUDIO_CUE_IDS,
+  AUDIO_IDENTITY_CUES,
+  COUNTRY_LEITMOTIFS,
+  EVOLUTION_STINGS,
+  LEGACY_SOUND_IDS,
+  audioCue,
+  countryLeitmotif,
+  evolutionSting,
+  fanfareCueIdFor,
+  legacyPlayableSoundId,
+} from "../src/world/audioIdentity.js";
+import {
+  buildClaimRollCeremony,
+  buildEvolutionRitual,
+  buildLootboxRevealRitual,
+  lootboxRitualKind,
+} from "../src/nft-pipeline/ritual.js";
 
 let failures = 0;
 let passes = 0;
@@ -352,6 +371,121 @@ check(
   ),
 );
 
+// ─── Phase F · rarity light language (bible module) ──────────────────────────
+console.log("\nF · rarity light language");
+check("5 canonical rarity tiers", RARITY_TIERS.length === 5);
+check(
+  "tier color language pairwise distinct",
+  new Set(RARITY_TIERS.map((t) => t.colorLanguage)).size === 5,
+);
+check(
+  "tier particle language pairwise distinct",
+  new Set(RARITY_TIERS.map((t) => t.particleLanguage)).size === 5,
+);
+check(
+  "tier crack-light + reveal-flare pairwise distinct",
+  new Set(RARITY_TIERS.map((t) => `${t.crackLight}|${t.revealFlare}`)).size === 5,
+);
+check(
+  "stage → tier mapping is monotonic across the 8-stage ladder",
+  [0, 1, 2, 3, 4, 5, 6, 7].every(
+    (s, i, arr) => i === 0 || rarityTierForStage(arr[i - 1]).rank <= rarityTierForStage(s).rank,
+  ),
+);
+check("stage 7 is mythic; stage 0 is common",
+  rarityTierForStage(7).id === "mythic" && rarityTierForStage(0).id === "common");
+check("every tier maps to a fanfare cue that exists",
+  RARITY_TIERS.every((t) => audioCue(fanfareCueIdFor(t)) !== null));
+
+// ─── Phase F · audio identity spec ───────────────────────────────────────────
+console.log("\nF · audio identity");
+check("12 country leitmotifs", COUNTRY_LEITMOTIFS.length === 12);
+check("leitmotif prompts pairwise distinct",
+  new Set(COUNTRY_LEITMOTIFS.map((m) => m.prompt)).size === 12);
+check("4 evolution stings (one per stage band)", EVOLUTION_STINGS.length === 4);
+check("evolution sting escalates with the band (pup ≠ ascendant)",
+  evolutionSting(0).id === "evolution_sting_pup" &&
+  evolutionSting(7).id === "evolution_sting_ascendant" &&
+  evolutionSting(0).prompt !== evolutionSting(7).prompt);
+check("cue ids globally unique",
+  new Set(ALL_AUDIO_CUE_IDS).size === ALL_AUDIO_CUE_IDS.length);
+check("catalog covers themes + ritual sfx",
+  ["chapter_settled_theme", "losing_streak_motif", "ritual_lootbox_anticipation",
+    "ritual_lootbox_near_miss", "ritual_claim_anticipation"].every((id) => audioCue(id) !== null));
+check("every cue falls back to an EXISTING FE sound id",
+  AUDIO_IDENTITY_CUES.every((c) => (LEGACY_SOUND_IDS as readonly string[]).includes(c.fallbackSoundId)));
+check("every cue fits stable-audio's 47s ceiling", AUDIO_IDENTITY_CUES.every((c) => c.seconds >= 1 && c.seconds <= 47));
+check("every cue prompt enforces instrumental/no-lyrics",
+  AUDIO_IDENTITY_CUES.every((c) => /no vocals, no lyrics/i.test(c.prompt)));
+check("legacy ids pass through the playable resolver",
+  legacyPlayableSoundId("jackpot") === "jackpot" && legacyPlayableSoundId("mutation") === "mutation");
+check("cue ids resolve to their fallback via the existing mapping",
+  legacyPlayableSoundId("leitmotif_usa") === "jackpot" &&
+  legacyPlayableSoundId("ritual_lootbox_near_miss") === "mutation");
+check("USA vs Brazil leitmotifs differ", countryLeitmotif(0).prompt !== countryLeitmotif(10).prompt);
+
+// ─── Phase F · staged rituals (lootbox win / near-miss / evolution DISTINCT) ─
+console.log("\nF · staged rituals");
+const winRitual = buildLootboxRevealRitual({ rollValue: 900, thresholdBps: 1000, factionId: 0, revealStage: 7 });
+const nearMissRitual = buildLootboxRevealRitual({ rollValue: 1100, thresholdBps: 1000, factionId: 0 });
+const missRitual = buildLootboxRevealRitual({ rollValue: 9000, thresholdBps: 1000, factionId: 0 });
+const evoRitual = buildEvolutionRitual({ factionId: 0, fromStage: 4, toStage: 5 });
+const claimHit = buildClaimRollCeremony({ result: "visual", factionId: 0 });
+const claimSettle = buildClaimRollCeremony({ result: "none", factionId: 0 });
+
+check("outcome classifier mirrors the on-chain roll",
+  lootboxRitualKind(900, 1000) === "lootbox_win" &&
+  lootboxRitualKind(1100, 1000) === "lootbox_near_miss" &&
+  lootboxRitualKind(9000, 1000) === "lootbox_miss");
+check("win ritual stages all four acts in order",
+  winRitual.acts.map((a) => a.act).join(",") === "anticipation_shake,crack,rarity_flare,reveal");
+check("near-miss ritual stages shake → lock strain → dim resolve",
+  nearMissRitual.acts.map((a) => a.act).join(",") === "anticipation_shake,lock_strain,dim_resolve");
+check("evolution ritual stages charge → burst → reveal",
+  evoRitual.acts.map((a) => a.act).join(",") === "charge,burst,reveal");
+check("the three rituals are pairwise DISTINCT staged definitions",
+  new Set([winRitual, nearMissRitual, evoRitual].map((r) => `${r.ritualId}|${r.acts.map((a) => a.act).join(",")}`)).size === 3);
+check("light language differs across the three rituals",
+  new Set([winRitual, nearMissRitual, evoRitual].map((r) => r.acts.map((a) => a.lightLanguage).join("|"))).size === 3);
+check("sound cue sets differ across the three rituals",
+  new Set([winRitual, nearMissRitual, evoRitual].map((r) => r.acts.map((a) => a.soundCueId).join("|"))).size === 3);
+check("win ritual carries the bible's mythic light language",
+  winRitual.rarity === "mythic" &&
+  winRitual.acts.some((a) => a.lightLanguage.includes(rarityTier("mythic").colorLanguage)) &&
+  winRitual.acts.some((a) => a.lightLanguage === rarityTier("mythic").crackLight));
+check("epic vs common win rituals differ only by tier language",
+  buildLootboxRevealRitual({ rollValue: 1, thresholdBps: 1000, rarity: "epic" }).acts[2].lightLanguage !==
+  buildLootboxRevealRitual({ rollValue: 1, thresholdBps: 1000, rarity: "common" }).acts[2].lightLanguage);
+check("near-miss dramatizes roll_value vs threshold_bps (margin on stage)",
+  nearMissRitual.acts[1].staging.includes("1100") &&
+  nearMissRitual.acts[1].staging.includes("1000") &&
+  nearMissRitual.acts[1].staging.includes("just 100 over"));
+check("near-miss carries the canonical line",
+  nearMissRitual.acts[1].caption === "The lock almost turned.");
+check("a distant miss gets the quiet two-beat (no lock-strain tease)",
+  missRitual.acts.length === 2 && !missRitual.acts.some((a) => a.act === "lock_strain"));
+check("every ritual act resolves to a real audio cue + legacy fallback",
+  [winRitual, nearMissRitual, missRitual, evoRitual, claimHit, claimSettle].every((r) =>
+    r.acts.every((a) =>
+      (audioCue(a.soundCueId) !== null || (LEGACY_SOUND_IDS as readonly string[]).includes(a.soundCueId)) &&
+      (LEGACY_SOUND_IDS as readonly string[]).includes(a.fallbackSoundId))));
+check("win reveal lands on the country leitmotif",
+  winRitual.acts[3].soundCueId === "leitmotif_usa");
+check("evolution burst rides the stage-band sting",
+  evoRitual.acts[1].soundCueId === evolutionSting(5).id);
+check("claim-roll ceremony is a 2-act anticipation → resolve",
+  claimHit.acts.map((a) => a.act).join(",") === "charge_roll,roll_hit" &&
+  claimSettle.acts.map((a) => a.act).join(",") === "charge_roll,roll_settle");
+check("claim-roll hit vs settle resolve differently",
+  claimHit.acts[1].soundCueId !== claimSettle.acts[1].soundCueId &&
+  claimHit.acts[1].lightLanguage !== claimSettle.acts[1].lightLanguage);
+check("claim-roll evolution hit hands off to the evolution sting",
+  buildClaimRollCeremony({ result: "evolution", factionId: 0, newStage: 7 }).acts[1].soundCueId ===
+    "evolution_sting_ascendant");
+check("ritual durations are FE-pacable (every act 0.5-3s, total under 8s)",
+  [winRitual, nearMissRitual, missRitual, evoRitual, claimHit, claimSettle].every((r) =>
+    r.acts.every((a) => a.durationMs >= 500 && a.durationMs <= 3000) && r.totalDurationMs <= 8000));
+
 // ─── Banned-lexicon sweep over every static grammar string ───────────────────
 console.log("\nLint · banned lexicon sweep");
 const corpus: Array<[string, string]> = [
@@ -367,6 +501,20 @@ const corpus: Array<[string, string]> = [
   ["ceremony stage-5", evoTo5],
   ["state pup mining", pupMine],
   ["state ascended win", godWin],
+  // Phase F: rarity light language, audio cue prompts, and ritual staging
+  // strings stay lexicon-clean too.
+  ...RARITY_TIERS.map((t): [string, string] => [
+    `rarity ${t.id}`,
+    `${t.name} ${t.colorLanguage} ${t.particleLanguage} ${t.crackLight} ${t.revealFlare}`,
+  ]),
+  ...AUDIO_IDENTITY_CUES.map((c): [string, string] => [`audio ${c.id}`, `${c.title} ${c.prompt}`]),
+  ...[winRitual, nearMissRitual, missRitual, evoRitual, claimHit, claimSettle].flatMap(
+    (r): Array<[string, string]> =>
+      r.acts.map((a): [string, string] => [
+        `ritual ${r.ritualId} ${a.act}`,
+        `${a.title} ${a.staging} ${a.lightLanguage} ${a.caption || ""}`,
+      ]),
+  ),
   // Phase E: every base-type grammar string stays lexicon-clean too.
   ...BASE_TYPE_IDS.flatMap((id): Array<[string, string]> => [
     [

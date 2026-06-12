@@ -221,6 +221,30 @@ inside generated images; image prompts use only the visual grammar.
 
 ---
 
+## Rarity light language (`RARITY_TIERS` in `src/world/bible.ts`)
+
+The canonical color/particle grammar for rarity-tiered reveals. Every surface
+that stages a rarity moment (lootbox reveal rituals, claim-roll ceremonies,
+marketplace cards, chapter callouts) pulls from this table — a "Motherlode
+glow" must read identically everywhere:
+
+| Tier | Name | Hue family | Fanfare band |
+|------|------|------------|--------------|
+| common | Surface Ore | worn steel / paper-white | minor |
+| uncommon | Live Conduit | signal cyan | minor |
+| rare | Deep Vein | royal violet | major |
+| epic | Motherlode | molten bitcoin gold | major |
+| mythic | Genesis Seam | prismatic white-gold spectrum | mythic |
+
+Each tier carries `colorLanguage`, `particleLanguage`, `crackLight` (light
+leaking through a cracking lootbox seam), `revealFlare` (the landing burst),
+and a `fanfareTier` the audio identity (`src/world/audioIdentity.ts`) maps to
+a cue id. `rarityTierForStage()` maps the 8-stage ladder onto the 5 tiers
+(0-1 / 2-3 / 4-5 / 6 / 7). Staged ritual definitions live in
+`src/nft-pipeline/ritual.ts`; see `docs/rituals-and-audio.md`.
+
+---
+
 ## Who imports what
 
 | Consumer | Pulls from the bible |

@@ -1896,6 +1896,109 @@ export function castEntry(name: string): CastCanonEntry | null {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// RARITY LIGHT LANGUAGE (Phase F) — the canonical color/particle grammar for
+// rarity-tiered reveals. EVERY surface that stages a rarity moment (lootbox
+// reveal rituals, claim-roll ceremonies, marketplace cards, chapter callouts)
+// must take its light language from THIS table so a "Motherlode glow" reads
+// identically everywhere. Visual-only by design: audio cue ids live in
+// src/world/audioIdentity.ts and key off `fanfareTier` to avoid a circular
+// bible ↔ audio dependency.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type RarityTierId = "common" | "uncommon" | "rare" | "epic" | "mythic";
+
+export interface RarityTier {
+  id: RarityTierId;
+  /** Canonical display name (mining-vein ladder — copy surfaces only). */
+  name: string;
+  /** 0 (lowest) … 4 (highest). */
+  rank: number;
+  /** Palette words — what hue family owns this tier. */
+  colorLanguage: string;
+  /** Particle behavior — density, motion, scale. */
+  particleLanguage: string;
+  /** The light leaking through a cracking lootbox seam at this tier. */
+  crackLight: string;
+  /** The burst when the reveal lands. */
+  revealFlare: string;
+  /** Fanfare intensity band the audio identity maps to a cue id. */
+  fanfareTier: "minor" | "major" | "mythic";
+}
+
+export const RARITY_TIERS: RarityTier[] = [
+  {
+    id: "common",
+    name: "Surface Ore",
+    rank: 0,
+    colorLanguage: "worn steel grey with a soft paper-white core",
+    particleLanguage: "a few slow dust motes drifting up and fading fast",
+    crackLight: "a thin pale seam-glow, barely brighter than the room",
+    revealFlare: "a single soft white pop that settles immediately",
+    fanfareTier: "minor",
+  },
+  {
+    id: "uncommon",
+    name: "Live Conduit",
+    rank: 1,
+    colorLanguage: "signal cyan over graphite, clean and electric",
+    particleLanguage: "short cyan sparks ticking along the seams like a live wire",
+    crackLight: "cyan light pulsing through the cracks in a steady heartbeat",
+    revealFlare: "a crisp cyan ring-burst that snaps outward once",
+    fanfareTier: "minor",
+  },
+  {
+    id: "rare",
+    name: "Deep Vein",
+    rank: 2,
+    colorLanguage: "royal violet shot through with ultraviolet edges",
+    particleLanguage: "violet embers orbiting the box in slow spirals",
+    crackLight: "violet beams escaping the seams and sweeping the floor",
+    revealFlare: "a double violet shockwave with ember trails",
+    fanfareTier: "major",
+  },
+  {
+    id: "epic",
+    name: "Motherlode",
+    rank: 3,
+    colorLanguage: "molten bitcoin gold with deep amber undertones",
+    particleLanguage: "dense golden sparks fountaining upward like struck ore",
+    crackLight: "furnace-gold light blazing from every crack, heat shimmer at the edges",
+    revealFlare: "a rolling golden eruption that rains slow sparks",
+    fanfareTier: "major",
+  },
+  {
+    id: "mythic",
+    name: "Genesis Seam",
+    rank: 4,
+    colorLanguage: "prismatic white-gold splitting into the full spectrum at the rim",
+    particleLanguage: "a storm of prismatic shards orbiting fast, the air itself glittering",
+    crackLight: "blinding white-gold light dissolving the box edges before it even opens",
+    revealFlare: "a screen-filling prismatic whiteout that resolves into a halo",
+    fanfareTier: "mythic",
+  },
+];
+
+const RARITY_BY_ID = new Map(RARITY_TIERS.map((t) => [t.id, t]));
+
+export function rarityTier(id: RarityTierId): RarityTier {
+  return RARITY_BY_ID.get(id) || RARITY_TIERS[0];
+}
+
+/**
+ * Canonical evolution-stage → rarity-tier mapping (8-stage ladder → 5 tiers):
+ * 0-1 common, 2-3 uncommon, 4-5 rare, 6 epic, 7 mythic. Used when a reveal's
+ * rarity is derived from the revealed beast rather than passed explicitly.
+ */
+export function rarityTierForStage(stage: number | undefined | null): RarityTier {
+  const s = Math.min(7, Math.max(0, Math.round(Number(stage ?? 0)) || 0));
+  if (s >= 7) return rarityTier("mythic");
+  if (s >= 6) return rarityTier("epic");
+  if (s >= 4) return rarityTier("rare");
+  if (s >= 2) return rarityTier("uncommon");
+  return rarityTier("common");
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Aggregate export — one object when you want the whole world at once.
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -1904,4 +2007,5 @@ export const WORLD_BIBLE = {
   countries: COUNTRY_BIBLES,
   profiles: COUNTRY_CHARACTER_PROFILES,
   showCast: CAST_CANON,
+  rarity: RARITY_TIERS,
 } as const;
