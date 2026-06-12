@@ -71,11 +71,11 @@ Power clips render the beast's **named country × lane technique** (`techniqueFo
 
 Per-event transition clip + voiced in-character dialogue line.
 
-- **Input** (`NftMutationContentInput`): `beast`, `kind: "visual" | "power" | "evolution"`, optional `traitIndex`, `newTraitName`, `newStage`, `fromStage` (ceremony from-stage; defaults to `newStage - 1` / DNA stage), `previousLine` (dialogue continuity — cycle memory is backend-owned), `voiceId`, `gameState` (now the full typed `MomentContext` — streaks, rank deltas, roll vs threshold, rival id), `refreshAssets`, `regenerateStateLoops`, `knownTechniques` (debut memory).
+- **Input** (`NftMutationContentInput`): `beast`, `kind: "visual" | "power" | "evolution"`, optional `traitIndex`, `newTraitName`, `newStage`, `fromStage` (ceremony from-stage; defaults to `newStage - 1` / DNA stage), `previousLine` (dialogue continuity — cycle memory is backend-owned), `voiceId`, `gameState` (now the full typed `MomentContext` — streaks, rank deltas, roll vs threshold, rival id), `refreshAssets`, `regenerateStateLoops`, `knownTechniques` (debut memory), `budgetMode` (evolution: force the chroma-strip ceremony instead of the Seedance video).
 - **Policy** (ported from production):
   - `visual` → transition + dialogue; canonical-art regen deferred to cycle end (`refreshAssets: true` opts into an immediate single-trait DP refresh, identity-gated).
   - `power` → transition + dialogue; the transition renders the beast's NAMED country × lane technique (visual grammar only — the name never enters image prompts); result carries `powerSlot` (1-5) and `techniqueUsed { name, isDebut? }`.
-  - `evolution` → full regen FIRST (new full body anchored to the evolution-level base body + new DP, then fresh state loops) so the transition uses the evolved look, then transition + dialogue. The evolution transition is the **3-beat ceremony** — CHARGE (anticipation) → BURST (whiteout morph, identity-readable silhouette held inside the light) → REVEAL (signature pose + aura settle) — from `src/world/progression.ts`, choreographed across the strip's keyframes with per-transition canon (The First Spark … The Ascension), stage aura escalation tokens, silhouette-change notes, and country aura flavor (USA gold ticker-ribbons, China jade rings, Russia frost pressure…). The whole choreographed strip passes the Gemini identity gate, so every beat is gated.
+  - `evolution` → full regen FIRST (new full body anchored to the evolution-level base body + new DP, then fresh state loops) so the transition uses the evolved look, then transition + dialogue. The evolution transition is the **3-beat ceremony** — CHARGE (anticipation) → BURST (whiteout morph, identity-readable silhouette held inside the light) → REVEAL (signature pose + aura settle) — from `src/world/progression.ts`, with per-transition canon (The First Spark … The Ascension), stage aura escalation tokens, silhouette-change notes, and country aura flavor (USA gold ticker-ribbons, China jade rings, Russia frost pressure…). It renders as **ONE Seedance 2.0 multi-scene generation** (~12s MP4, `NFT_CEREMONY_VIDEO_SECS`/`_RESOLUTION`/`_ASPECT`): the three beats are in-prompt cuts, the PRE-evolution canonical art is the start frame, the evolved canonical art is the `end_image_url`, and `generate_audio` carries the synced whiteout impact — identity anchored by construction on both ends (see [video-scenes.md](video-scenes.md)). **Budget mode** (`budgetMode: true` per job or `NFT_CEREMONY_BUDGET_MODE=true`) — and any video failure — falls back to the legacy 3-keyframe chroma-strip APNG choreography, where the whole strip passes the Gemini identity gate.
 - **Dialogue**: one ≤14-word trash-talk line written by the configured LLM with personality + game-state + previous-line continuity, then voiced with the shared per-(faction × breed × stage-band) MiniMax voice (TTS persisted through the artifact store as `dialogue_audio`). When `gameState.rivalFactionId` is one of the beast country's world-bible rivals, the prompt injects the canon rivalry edge so the line references the rivalry. If this job designed a NEW voice, the result includes `voiceProfile` — persist it backend-side (`setVoiceRegistry` can plug in a durable registry; MiniMax expires unused voice ids after ~7 days).
 - **Output** (`NftMutationContentResult`): `transition`, `dialogue { line, soundId, audio? }`, `refreshedAssets`, `stateLoops`, `powerSlot`, `techniqueUsed`, plus the flat `artifacts[]`.
 
@@ -93,7 +93,7 @@ Dialogue (and optionally an identity-gated reaction clip) for the moment vocabul
 ### 5. `nft.cycle_summary` — per-beast cycle recap
 
 - **Input** (`NftCycleSummaryInput`): `beast { mint, storagePath? }`, `warId`, and the cycle's transition `clips` in chronological order (the backend's cycle memory decides what belongs).
-- **Pipeline**: each APNG clip is normalized with ffmpeg (`fps`/`scale`/`pad` to a square canvas on the console background) and concatenated into one `summary.mp4` (faststart). Per-segment failures are tolerated.
+- **Pipeline**: each clip — APNG (chroma-strip transitions) or MP4 (Seedance ceremony videos) — is normalized with ffmpeg (`fps`/`scale`/`pad` to a square canvas on the console background) and concatenated into one `summary.mp4` (faststart). Per-segment failures are tolerated.
 - **Output** (`NftCycleSummaryResult`): the `cycle_summary` artifact under `<storagePath>/cycles/<warId>/summary.mp4`, `clipCount`, `segmentsUsed`.
 
 ### 6. `nft.mint_intro` — the "joined the war" mint moment
@@ -109,7 +109,7 @@ One cheap identity-gated intro panel (the recruit arriving at its country's bibl
 | Tool | Needed by | Notes |
 | --- | --- | --- |
 | `python3` + Pillow + numpy + scipy | `scripts/assemble_anim.py` (state loops, transitions) | `pip install pillow numpy scipy`; override interpreter with `HASHBEAST_ANIM_PYTHON`, script path with `HASHBEAST_ANIM_ASSEMBLER` |
-| `ffmpeg` | `nft.cycle_summary` | must be on PATH |
+| `ffmpeg` | `nft.cycle_summary`; `generateSceneSequence` chaining/stitching (>15s sequences) | must be on PATH |
 | fal.ai key | all generation | `FAL_API_KEY` |
 | Gemini key | identity gates | `GEMINI_KEY` (optional — gates soft-accept without it) |
 

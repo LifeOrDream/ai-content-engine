@@ -175,6 +175,13 @@ export interface Sequence {
   location: string;
   timeOfDay: string;
   characters: SequenceCharacter[];
+  /**
+   * Per-block Seedance native audio. TRUE for blocks whose dialogue/diegetic
+   * sound must be generated in-model; FALSE for blocks that ride the post
+   * score (silent renders mix cleaner under music). Omitted → the renderer's
+   * TRAILER_NATIVE_AUDIO env default.
+   */
+  generateAudio?: boolean;
   /** Signature effect description (time-stop / speed-ramp / one-take / core illusion) or empty. */
   signature?: string;
   /** The compiled Seedance timeline prompt: global block → timestamped shots → rules → logic. */

@@ -24,7 +24,14 @@ import { GoogleGenAI, createUserContent } from "@google/genai";
 
 import { getHashBeastAssetBucketName } from "./hashbeastAssetBucket.js";
 import { AsyncLocalStorage } from "node:async_hooks";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { logger } from "./logger.js";
+
+const execFileP = promisify(execFile);
 
 /**
  * Ambient fal API key for the current async operation. The fal key pool
@@ -342,13 +349,16 @@ export async function generateVideoFromFrames(
   startFrameUrl: string,
   endFrameUrl?: string,
   opts: {
-    durationSecs?: number;
+    /** Seconds (Seedance 2.0 enum "4".."15") or "auto" — the model picks the natural runtime from the prompt. */
+    durationSecs?: number | "auto";
     resolution?: string;
     aspectRatio?: string;
     /** Override the fal endpoint (e.g. "bytedance/seedance-2.0/image-to-video"). Defaults to VIDEO_MODEL. */
     model?: string;
-    /** Seedance 2.0: native synchronized audio (SFX/ambient/lip-synced speech). Sent only when set — older endpoints reject unknown fields. */
+    /** Seedance 2.0: native synchronized audio (SFX/ambient/lip-synced speech), no extra cost. Sent only when set — older endpoints reject unknown fields. */
     generateAudio?: boolean;
+    /** Deterministic-ish sampling seed (re-rolls with identical inputs reproduce the take). */
+    seed?: number;
   } = {},
 ): Promise<GeneratedMedia> {
   const endFrameKey =
@@ -358,12 +368,14 @@ export async function generateVideoFromFrames(
     prompt,
     image_url: startFrameUrl,
     // Seedance `duration` is a string enum (v1: "2".."12"; 2.0: "4".."15" | "auto").
-    duration: String(opts.durationSecs || VIDEO_DURATION_SECS),
+    duration:
+      opts.durationSecs === "auto" ? "auto" : String(opts.durationSecs || VIDEO_DURATION_SECS),
     resolution: opts.resolution || process.env.MUTATION_VIDEO_RESOLUTION || "720p",
     aspect_ratio: opts.aspectRatio || process.env.MUTATION_VIDEO_ASPECT || "9:16",
   };
   if (endFrameUrl) body[endFrameKey] = endFrameUrl;
   if (opts.generateAudio !== undefined) body.generate_audio = opts.generateAudio;
+  if (opts.seed !== undefined && Number.isFinite(opts.seed)) body.seed = Math.trunc(opts.seed);
 
   const data = await falRun(opts.model || VIDEO_MODEL, body, VIDEO_TIMEOUT_MS);
   // fal video models return { video: { url } } (most) or { videos: [{url}] }.
@@ -375,6 +387,275 @@ export async function generateVideoFromFrames(
     buffer: await fetchAsBuffer(url),
     model: meta?.model || opts.model || VIDEO_MODEL,
     requestId: meta?.requestId,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Multi-scene sequence (Seedance 2.0) — ONE generation with in-prompt cuts,
+// auto-chained beyond the 15s cap. See docs/video-scenes.md.
+// ---------------------------------------------------------------------------
+
+/** Seedance 2.0 per-generation duration bounds (the `duration` string enum). */
+export const SEEDANCE_MIN_SECS = 4;
+export const SEEDANCE_MAX_SECS = 15;
+
+export interface SceneDirection {
+  /** Motion/action/camera direction for this scene (what happens + how it moves). */
+  direction: string;
+  /**
+   * Optional fal-reachable start-frame URL. On the FIRST scene it becomes the
+   * call's `image_url`. On a later scene it forces a CHAIN SPLIT — that scene
+   * starts a new Seedance call anchored on this exact frame (hard identity /
+   * style reset, e.g. cutting to product footage).
+   */
+  refStartImage?: string;
+  /**
+   * Optional fal-reachable end-frame URL (`end_image_url`). Only honored when
+   * this scene ENDS a call (the last scene of a chunk) — Seedance takes one
+   * end frame per generation. Use it to pull the generation toward an exact
+   * final pose (e.g. the evolved canonical art on a REVEAL beat).
+   */
+  refEndImage?: string;
+  /** Seconds this scene should run. Unhinted scenes split the remaining window evenly. */
+  durationHint?: number;
+}
+
+export interface SceneSequenceOptions {
+  /**
+   * Total seconds, or "auto" (single-call sequences only — Seedance picks the
+   * natural runtime). Omitted → the sum of durationHints (default 4s/scene),
+   * chained across calls when it exceeds 15s.
+   */
+  totalDuration?: number | "auto";
+  aspectRatio?: string;
+  resolution?: string;
+  /**
+   * Seedance native synced audio (SFX/ambient/lip-sync — no extra cost).
+   * Default FALSE: trailer-class output is scored at assembly. Pass TRUE for
+   * rituals/ceremonies where synced impact SFX carry the moment.
+   */
+  generateAudio?: boolean;
+  seed?: number;
+  model?: string;
+  /** Look/style/identity block prepended once per call (the "GLOBAL" line). */
+  globalDirection?: string;
+}
+
+export interface SceneSequenceSegment extends GeneratedMedia {
+  /** The duration requested for this fal call ("auto" only on single-call sequences). */
+  durationSecs: number | "auto";
+  /** Indexes into the input `scenes` array this segment rendered. */
+  sceneIndexes: number[];
+  /** The exact prompt sent (in-prompt cut grammar), for run manifests. */
+  prompt: string;
+}
+
+export interface SceneSequenceResult {
+  /** One entry per Seedance call, in order. */
+  segments: SceneSequenceSegment[];
+  /** The stitched master (same media as segments[0] when one call sufficed). */
+  master: GeneratedMedia;
+  /** Total runtime requested ("auto" when Seedance chose). */
+  totalSeconds: number | "auto";
+}
+
+interface SceneChunk {
+  scenes: Array<{ scene: SceneDirection; index: number; secs: number }>;
+  secs: number;
+}
+
+/** Extract the final frame of a clip as PNG (the chain handoff anchor). */
+export async function extractFinalFrame(videoBuffer: Buffer): Promise<Buffer> {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "seedchain-"));
+  try {
+    const v = path.join(dir, "v.mp4");
+    const f = path.join(dir, "last.png");
+    fs.writeFileSync(v, videoBuffer);
+    // -sseof seeks from EOF; -update 1 keeps overwriting so the LAST decoded
+    // frame wins even if more than one frame lands in the window.
+    await execFileP(
+      "ffmpeg",
+      ["-y", "-sseof", "-0.35", "-i", v, "-update", "1", "-frames:v", "1", f],
+      { maxBuffer: 1 << 26 },
+    );
+    return fs.readFileSync(f);
+  } finally {
+    try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* ignore */ }
+  }
+}
+
+/** Concat segment clips into one master (re-encode — keeps mixed params safe). */
+async function concatSegments(buffers: Buffer[]): Promise<Buffer> {
+  if (buffers.length === 1) return buffers[0];
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "seedstitch-"));
+  try {
+    const files: string[] = [];
+    for (let i = 0; i < buffers.length; i += 1) {
+      const f = path.join(dir, `seg_${String(i).padStart(2, "0")}.mp4`);
+      fs.writeFileSync(f, buffers[i]);
+      files.push(f);
+    }
+    const list = path.join(dir, "list.txt");
+    fs.writeFileSync(list, files.map((f) => `file '${f}'`).join("\n"));
+    const out = path.join(dir, "master.mp4");
+    await execFileP(
+      "ffmpeg",
+      [
+        "-y", "-f", "concat", "-safe", "0", "-i", list,
+        "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac",
+        "-movflags", "+faststart", out,
+      ],
+      { maxBuffer: 1 << 27 },
+    );
+    return fs.readFileSync(out);
+  } finally {
+    try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* ignore */ }
+  }
+}
+
+/** Resolve per-scene seconds: hints win; the unhinted share the leftover evenly. */
+function resolveSceneSecs(scenes: SceneDirection[], totalSecs?: number): number[] {
+  const hinted = scenes.map((s) =>
+    s.durationHint && s.durationHint > 0 ? s.durationHint : 0,
+  );
+  const hintSum = hinted.reduce((a, b) => a + b, 0);
+  const unhinted = hinted.filter((h) => h === 0).length;
+  const fallbackEach =
+    totalSecs && totalSecs > hintSum && unhinted > 0
+      ? (totalSecs - hintSum) / unhinted
+      : 4; // sensible per-scene default when nothing constrains it
+  return hinted.map((h) => (h > 0 ? h : Math.max(1, fallbackEach)));
+}
+
+/** Greedy chunker: split at explicit refStartImage anchors and at the 15s cap. */
+function chunkScenes(scenes: SceneDirection[], secs: number[]): SceneChunk[] {
+  const chunks: SceneChunk[] = [];
+  let current: SceneChunk = { scenes: [], secs: 0 };
+  const flush = () => {
+    if (current.scenes.length > 0) chunks.push(current);
+    current = { scenes: [], secs: 0 };
+  };
+  scenes.forEach((scene, index) => {
+    const sceneSecs = secs[index];
+    const hardSplit = index > 0 && Boolean(scene.refStartImage);
+    const overflow =
+      current.scenes.length > 0 && current.secs + sceneSecs > SEEDANCE_MAX_SECS;
+    if (hardSplit || overflow) flush();
+    current.scenes.push({ scene, index, secs: sceneSecs });
+    current.secs += sceneSecs;
+  });
+  flush();
+  return chunks;
+}
+
+/** Build one chunk's timeline prompt with the in-prompt scene-cut grammar. */
+function buildChunkPrompt(chunk: SceneChunk, globalDirection?: string): string {
+  const lines: string[] = [];
+  if (globalDirection) lines.push(globalDirection.trim());
+  let t = 0;
+  chunk.scenes.forEach(({ scene, secs }, i) => {
+    const window = `${t.toFixed(1)}-${(t + secs).toFixed(1)}s`;
+    lines.push(
+      i === 0
+        ? `${window}: ${scene.direction.trim()}`
+        : `${window} — cut to — ${scene.direction.trim()}`,
+    );
+    t += secs;
+  });
+  return lines.join("\n");
+}
+
+/**
+ * Render an ORDERED list of scenes as Seedance 2.0 multi-scene video.
+ *
+ * - Sequences that fit one generation (≤15s) become ONE fal call: the scenes
+ *   are compiled into a timestamped timeline prompt joined by the in-prompt
+ *   scene-cut grammar ("… — cut to — …"), with the first scene's
+ *   `refStartImage` as `image_url` and the last scene's `refEndImage` as
+ *   `end_image_url`. One call = one set of native cuts, synced audio optional.
+ * - Longer sequences AUTO-CHAIN: scenes are packed into ≤15s chunks and call
+ *   N+1's `image_url` is the ffmpeg-extracted FINAL frame of call N's output
+ *   (uploaded so fal can fetch it) — identity continuity across the chain. A
+ *   scene with an explicit `refStartImage` always starts its own chunk (hard
+ *   cut / style change).
+ * - Returns every segment plus a stitched master.
+ *
+ * Requires `ffmpeg` on PATH when chaining/stitching (single-call sequences
+ * never shell out). The first scene must carry `refStartImage` — Seedance i2v
+ * is start-frame anchored.
+ */
+export async function generateSceneSequence(
+  scenes: SceneDirection[],
+  opts: SceneSequenceOptions = {},
+): Promise<SceneSequenceResult> {
+  if (!Array.isArray(scenes) || scenes.length === 0) {
+    throw new Error("generateSceneSequence: no scenes");
+  }
+  if (!scenes[0].refStartImage) {
+    throw new Error("generateSceneSequence: scenes[0].refStartImage is required (i2v start anchor)");
+  }
+
+  const auto = opts.totalDuration === "auto";
+  const totalSecs = auto
+    ? undefined
+    : typeof opts.totalDuration === "number" && opts.totalDuration > 0
+      ? opts.totalDuration
+      : undefined;
+  const secs = resolveSceneSecs(scenes, totalSecs);
+  const chunks = chunkScenes(scenes, secs);
+  if (auto && chunks.length > 1) {
+    throw new Error(
+      "generateSceneSequence: totalDuration 'auto' only supports single-call sequences (≤15s, no mid-sequence refStartImage)",
+    );
+  }
+
+  const segments: SceneSequenceSegment[] = [];
+  let chainFrameUrl: string | undefined;
+  for (let c = 0; c < chunks.length; c += 1) {
+    const chunk = chunks[c];
+    const prompt = buildChunkPrompt(chunk, opts.globalDirection);
+    const startUrl = chunk.scenes[0].scene.refStartImage || chainFrameUrl;
+    if (!startUrl) throw new Error(`generateSceneSequence: chunk ${c + 1} has no start frame`);
+    const endUrl = chunk.scenes[chunk.scenes.length - 1].scene.refEndImage;
+    const durationSecs: number | "auto" = auto
+      ? "auto"
+      : Math.min(SEEDANCE_MAX_SECS, Math.max(SEEDANCE_MIN_SECS, Math.round(chunk.secs)));
+    const media = await generateVideoFromFrames(prompt, startUrl, endUrl, {
+      durationSecs,
+      resolution: opts.resolution,
+      aspectRatio: opts.aspectRatio,
+      model: opts.model,
+      generateAudio: opts.generateAudio ?? false,
+      seed: opts.seed,
+    });
+    segments.push({
+      ...media,
+      durationSecs,
+      sceneIndexes: chunk.scenes.map((s) => s.index),
+      prompt,
+    });
+    // Chain handoff: the NEXT chunk (unless it re-anchors itself) starts on
+    // this output's literal final frame.
+    const next = chunks[c + 1];
+    if (next && !next.scenes[0].scene.refStartImage) {
+      const frame = await extractFinalFrame(media.buffer);
+      chainFrameUrl = await uploadBufferToS3(
+        `scene-sequences/${Date.now()}-chain-${c + 1}.png`,
+        frame,
+        "image/png",
+      );
+    }
+  }
+
+  const masterBuffer = await concatSegments(segments.map((s) => s.buffer));
+  const master: GeneratedMedia =
+    segments.length === 1
+      ? { url: segments[0].url, buffer: masterBuffer, model: segments[0].model, requestId: segments[0].requestId }
+      : { url: segments[0].url, buffer: masterBuffer, model: segments[0].model };
+  return {
+    segments,
+    master,
+    totalSeconds: auto ? "auto" : segments.reduce((t, s) => t + (s.durationSecs as number), 0),
   };
 }
 

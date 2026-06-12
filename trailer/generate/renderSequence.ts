@@ -32,6 +32,10 @@ const VIDEO_RES = process.env.TRAILER_VIDEO_RES || "1080p";
  */
 const SEQ_VIDEO_MODEL = process.env.TRAILER_VIDEO_FAL_MODEL || "bytedance/seedance-2.0/image-to-video";
 const NATIVE_AUDIO = process.env.TRAILER_NATIVE_AUDIO !== "false";
+// Optional fixed seed for reproducible re-renders (unset → model picks).
+const VIDEO_SEED = Number.isFinite(Number(process.env.TRAILER_VIDEO_SEED))
+  ? Number(process.env.TRAILER_VIDEO_SEED)
+  : undefined;
 const VIDEO_MIN_SEC = 4; // Seedance 2.0 duration enum floor
 const VIDEO_MAX_SEC = Math.max(VIDEO_MIN_SEC, Number(process.env.TRAILER_VIDEO_MAX_SEC || 15));
 const SAVE_PROMPTS = process.env.TRAILER_SAVE_PROMPTS === "true";
@@ -370,13 +374,18 @@ export async function renderSequence(
     seq.negativePrompt ? `NEGATIVE PROMPT: ${seq.negativePrompt}` : "",
   ].filter(Boolean).join("\n\n");
   dumpPrompt(opts.promptDumpDir, `seq_${String(seq.n).padStart(2, "0")}_timeline_prompt.txt`, videoPrompt);
-  step(seq, `Seedance 2.0 generation (${durationSecs}s, ${VIDEO_RES}, audio=${NATIVE_AUDIO})`);
+  // Per-block native-audio control: the production office marks scored
+  // montage blocks generateAudio:false (cleaner under the post score) and
+  // dialogue/diegetic blocks true; env default covers older scenes.json.
+  const nativeAudio = seq.generateAudio ?? NATIVE_AUDIO;
+  step(seq, `Seedance 2.0 generation (${durationSecs}s, ${VIDEO_RES}, audio=${nativeAudio})`);
   const vid = await generateVideoFromFrames(videoPrompt, start.url, end?.url, {
     durationSecs,
     resolution: VIDEO_RES,
     aspectRatio: RENDER_ASPECT,
     model: SEQ_VIDEO_MODEL,
-    generateAudio: NATIVE_AUDIO,
+    generateAudio: nativeAudio,
+    seed: VIDEO_SEED,
   });
   falRequests.push({
     stageId: `video:seq-${seq.n}`,

@@ -258,7 +258,7 @@ The script is LOCKED: SPINE, LOOP, STORY, POV, TONE, VISUAL TASK, ACTION, INTENT
 
 ──────── JOB 1: DIRECT (sequences + cinematography) ────────
 1. GROUP INTO SEQUENCES — one sequence = one Seedance generation (HARD CAP ${ctx.seedanceMaxSec}s — NO exceptions; an over-cap sequence is unrenderable):
-- Group consecutive shots that share location/time/cast. Break at location jumps, time jumps, cast changes, or whenever the running total would exceed ${ctx.seedanceMaxSec}s. A long scene in one location is MULTIPLE sequences: split at natural beats and carry the environment via RULES ("same den, same lamps, continues from sequence N").
+- Group consecutive shots that share location/time/cast. Break at location jumps, time jumps, cast changes, STYLE/FOOTAGE changes (e.g. a hard cut to real product/UI footage or a different render style — those are always their own block), or whenever the running total would exceed ${ctx.seedanceMaxSec}s. A long scene in one location is MULTIPLE sequences: split at natural beats and carry the environment via RULES ("same den, same lamps, continues from sequence N").
 - MAX 3 characters per sequence. Crowds and rivals-on-monitors are background description, never tagged characters.
 - TIME every shot with math: speech runs ~2.1-2.4 words/second. Count each shot's quoted spoken words and allocate at least (wordCount / 2.3 + 0.8s); add seconds for action/reaction beats around the line. A dialogue-driven shot spends ~55-75% of its window on speech. If dialogue won't fit, split the scene into another sequence — never cram words into a smaller timestamp.
 - Shot times restart at 0s inside EACH sequence; the sequence's durationSec equals its last shot's endSec.
@@ -272,6 +272,7 @@ The script is LOCKED: SPINE, LOOP, STORY, POV, TONE, VISUAL TASK, ACTION, INTENT
 - Comedy timing in plain words: impact fully visible before reaction, hold the deadpan a beat too long, cut exactly on the punchline frame.
 3. SIGNATURE MOMENTS (1-2 per video, at the head-fake and/or payoff): pick ONE effect from the SIGNATURE EFFECTS LIBRARY, describe it physically in that sequence's signature field (trigger gesture, what freezes/ramps, what keeps moving, what the sound does). The effect grows from gear/country/personality. Every other sequence's signature is "".
 4. PER-SEQUENCE CONTROLS: characters (name + refTag + state — a wardrobe/state change is its own reference sheet), RULES (hard constraints that kill recurring render errors, derived from the story), LOGIC ("hard cuts between shots" default, or "one continuous take, single camera, no angle changes"). Continuity: identity, gear, lighting language, environment must read as ONE film — note in RULES anything the next sequence inherits.
+5. PER-SEQUENCE generateAudio: true when the block carries spoken dialogue or a diegetic sound moment that must be generated in-model (gum pop, pickaxe ring, silence-then-impact); false when the block is wall-to-wall scored montage with no dialogue (a silent render mixes cleaner under the post score). Dialogue blocks are ALWAYS true — native audio is the dialogue path.
 
 ──────── JOB 2: COMPILE (Seedance 2.0 timeline prompts) ────────
 - DIALOGUE IS CARRIED VERBATIM — copy every line and delivery word-for-word from the locked script into both the timelinePrompt (at its timestamp) and shots[].dialogue. Never rephrase, shorten, complete, or "improve" a word. A line that ends cut-off stays cut-off. Canon/examples in your context are STYLE REFERENCE, never script.
@@ -319,6 +320,7 @@ OUTPUT — STRICT JSON ONLY (no markdown):
       "durationSec": 12,
       "location": "…", "timeOfDay": "…",
       "characters": [{ "name": "Rex", "refTag": "@rex", "state": "default" }],
+      "generateAudio": true,
       "signature": "",
       "timelinePrompt": "GLOBAL: … VOICE: … ENVIRONMENT: … MOOD/COLOR/MUSIC/STYLE: …\\n0:00-0:03 — …\\n0:03-0:07 — …\\nRULES: …\\nLOGIC: hard cuts between shots",
       "negativePrompt": "short targeted list",

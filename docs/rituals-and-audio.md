@@ -9,7 +9,7 @@ identity spec that gives every moment an ownable sound.
 
 | Kind | Input | Result | Cost |
 | --- | --- | --- | --- |
-| `ritual.lootbox_reveal` | `RitualLootboxRevealInput` (roll_value, threshold_bps, factionId, rarity/revealStage, optional beast + `includeDialogue`) | `RitualContentResult` (staged ritual + optional voiced line) | FREE by default; `includeDialogue` adds LLM + TTS |
+| `ritual.lootbox_reveal` | `RitualLootboxRevealInput` (roll_value, threshold_bps, factionId, rarity/revealStage, optional beast + `includeDialogue` + `includeCinematic`/`cinematicStartFrameUrl`) | `RitualContentResult` (staged ritual + optional voiced line + optional `cinematic` MP4) | FREE by default; `includeDialogue` adds LLM + TTS; `includeCinematic` adds ONE Seedance 2.0 multi-scene video (acts as in-prompt cuts, native synced SFX) + 1 keyframe image unless `cinematicStartFrameUrl` is provided — see [video-scenes.md](video-scenes.md) |
 | `ritual.claim_roll` | `RitualClaimRollInput` (result: visual/power/evolution/none, factionId, newStage, optional beast + `includeDialogue`) | `RitualContentResult` | FREE by default; `includeDialogue` adds LLM + TTS |
 | `audio.identity_cue` | `{ cueId }` from `ALL_AUDIO_CUE_IDS` | `AudioIdentityCueResult` (fal url + meta) | one stable-audio call |
 
@@ -22,9 +22,11 @@ Rules, same as every content job:
 - **Flag gates.** `audio.identity_cue` refuses to generate unless
   `AUDIO_IDENTITY_GENERATION_ENABLED=true` — cues are generated **once**,
   stored, and referenced by id. Never mass-generate the catalog.
-- **Identity gate.** These jobs never render the character. Any beast imagery
-  for a ritual moment rides `nft.moment_content`, which keeps the Gemini
-  identity gate on every character render.
+- **Identity gate.** The opt-in lootbox cinematic anchors identity by
+  construction — the won beast's canonical art is the literal `end_image_url`
+  of the reveal. Any other beast imagery for a ritual moment rides
+  `nft.moment_content`, which keeps the Gemini identity gate on every
+  free-standing character render.
 - **No readable text in images** still applies to any prompt these definitions
   feed into; ritual `title`/`caption` strings are UI copy, never image text.
 

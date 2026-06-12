@@ -2,9 +2,9 @@
  * Cycle summary stitch — merges a beast's transition clips from one war cycle
  * (trait + evolution moments, in order) into ONE opaque MP4 "progress video".
  *
- * Each APNG transition clip is normalized (fps/scale/pad to a square canvas on
- * the console background) and concatenated with ffmpeg. Requires `ffmpeg` on
- * PATH.
+ * Each transition clip (APNG strip assembly or MP4 Seedance ceremony) is
+ * normalized (fps/scale/pad to a square canvas on the console background) and
+ * concatenated with ffmpeg. Requires `ffmpeg` on PATH.
  *
  * Stays in the backend: deciding WHICH clips belong to the cycle (Redis cycle
  * memory), the per-NFT cycle-history row, content-video/filmography records,
@@ -83,12 +83,15 @@ export async function generateCycleSummary(
       `pad=${SUMMARY_SIZE}:${SUMMARY_SIZE}:(ow-iw)/2:(oh-ih)/2:color=${SUMMARY_BG},format=yuv420p`;
     for (let i = 0; i < withVideo.length; i++) {
       try {
-        const apng = path.join(dir, `c_${i}.png`);
-        fs.writeFileSync(apng, await fetchAsBuffer(withVideo[i].url));
+        // Transition clips are APNG (chroma-strip path) or MP4 (Seedance
+        // ceremony path) — pick the extension by URL so ffmpeg demuxes right.
+        const ext = /\.mp4(?:$|[?#])/i.test(withVideo[i].url) ? "mp4" : "png";
+        const src = path.join(dir, `c_${i}.${ext}`);
+        fs.writeFileSync(src, await fetchAsBuffer(withVideo[i].url));
         const seg = path.join(dir, `s_${String(i).padStart(3, "0")}.mp4`);
         await execFileP(
           "ffmpeg",
-          ["-y", "-i", apng, "-vf", vf, "-c:v", "libx264", "-pix_fmt", "yuv420p", "-r", String(SUMMARY_FPS), "-an", seg],
+          ["-y", "-i", src, "-vf", vf, "-c:v", "libx264", "-pix_fmt", "yuv420p", "-r", String(SUMMARY_FPS), "-an", seg],
           { maxBuffer: 1 << 26 },
         );
         segs.push(seg);

@@ -23,12 +23,16 @@
  * every act also carries the legacy fallback id ("mutation" | "jackpot") so
  * the FE's existing soundId mapping keeps working until cues are generated.
  *
- * Ritual definitions are DETERMINISTIC and free — no model calls. The only
- * paid step is the OPT-IN voiced dialogue line (existing moment grammar +
- * voice path). Backend dispatch is flag-gated and budget-gated exactly like
- * nft.mutation_content. Character RENDERS are deliberately not done here:
- * any beast imagery for these moments rides nft.moment_content, which keeps
- * the Gemini identity gate on every character render.
+ * Ritual definitions are DETERMINISTIC and free — no model calls. The paid
+ * steps are both OPT-IN: the voiced dialogue line (existing moment grammar +
+ * voice path) and, for lootbox reveals, a CINEMATIC clip — the staged acts
+ * rendered as ONE Seedance 2.0 multi-scene generation (acts as in-prompt
+ * cuts, native synced SFX, the won beast's canonical art as the reveal end
+ * frame). Identity on the cinematic is anchored by construction (the
+ * canonical art IS the end frame); any other beast imagery still rides
+ * nft.moment_content, which keeps the Gemini identity gate on every
+ * free-standing character render. Backend dispatch is flag-gated and
+ * budget-gated exactly like nft.mutation_content.
  */
 import {
   countryBible,
@@ -67,7 +71,20 @@ import {
 } from "./mutationContent.js";
 import type { BeastMemorySnapshot } from "./beastMemory.js";
 import type { NftBeastInput } from "./types.js";
-import { getDefaultArtifactStore, type ArtifactStore, type NftArtifact } from "./artifacts.js";
+import {
+  getDefaultArtifactStore,
+  storeArtifact,
+  type ArtifactStore,
+  type NftArtifact,
+} from "./artifacts.js";
+import {
+  generateImageEdit,
+  generateSceneSequence,
+  SEEDANCE_MAX_SECS,
+  SEEDANCE_MIN_SECS,
+  type SceneDirection,
+} from "../utils/falMedia.js";
+import { logger } from "../utils/logger.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -396,6 +413,16 @@ export interface RitualLootboxRevealInput extends LootboxRitualInput {
   beast?: NftBeastInput;
   /** Opt-in: also write + voice the moment dialogue line (paid: LLM + TTS). */
   includeDialogue?: boolean;
+  /**
+   * Opt-in: render the staged acts as ONE Seedance 2.0 multi-scene clip — the
+   * acts become in-prompt cuts in a single generation with native synced SFX;
+   * on wins the revealed beast's canonical art is the literal end frame.
+   * Paid: 1 video call (+1 keyframe image when `cinematicStartFrameUrl` is
+   * omitted). Budget-gate dispatch backend-side like every other video.
+   */
+  includeCinematic?: boolean;
+  /** Pre-staged start keyframe URL (the sealed crate on its dais). Generated from the beast's canonical art when omitted. */
+  cinematicStartFrameUrl?: string;
   previousLine?: string;
   voiceId?: string;
   memory?: BeastMemorySnapshot;
@@ -414,7 +441,85 @@ export interface RitualContentResult {
   /** The moment grammar entry the dialogue used (when voiced). */
   moment?: MomentType;
   dialogue?: DialogueResult;
+  /** The single-generation multi-scene clip (opt-in, lootbox reveals). */
+  cinematic?: NftArtifact;
   artifacts: NftArtifact[];
+}
+
+// ── Cinematic (Seedance 2.0 multi-scene) tunables ──
+const RITUAL_CINEMATIC_RESOLUTION = process.env.RITUAL_CINEMATIC_RESOLUTION || "720p";
+const RITUAL_CINEMATIC_ASPECT = process.env.RITUAL_CINEMATIC_ASPECT || "9:16";
+
+/**
+ * Render a staged lootbox ritual as ONE Seedance multi-scene generation: each
+ * act is a scene, cut in-prompt; act durations (ms) become the cut timing;
+ * native audio carries the synced crack/flare/leitmotif impacts. On wins the
+ * revealed beast's canonical full-body art rides `end_image_url`, so the
+ * reveal lands EXACTLY on canon. Returns null when no start frame can be
+ * staged (no `cinematicStartFrameUrl` and no beast art to ground one).
+ */
+async function buildLootboxCinematic(
+  ritual: StagedRitual,
+  input: RitualLootboxRevealInput,
+  store: ArtifactStore,
+): Promise<NftArtifact | null> {
+  const isUrl = (u?: string) => Boolean(u && /^https?:\/\//i.test(u));
+  const beastArt = input.beast?.assetUrls?.fullBody || input.beast?.assetUrls?.dp;
+
+  // Start frame: caller-staged, else a one-image keyframe grounded on the
+  // beast's canonical art (style anchor — the crate scene itself is text-free).
+  let startUrl = input.cinematicStartFrameUrl;
+  if (!isUrl(startUrl)) {
+    if (!isUrl(beastArt)) return null;
+    const anticipation = ritual.acts[0];
+    const keyframe = await generateImageEdit(
+      [
+        `In the EXACT same pixel-art game style as the reference image: ${anticipation.staging}.`,
+        `Light: ${anticipation.lightLanguage}.`,
+        `The crate is sealed — the character from the reference is NOT visible anywhere.`,
+        `This is a STILL image — a frozen instant; no motion blur.`,
+        `ABSOLUTELY NO text, words, letters, logos, UI or symbols anywhere in the image.`,
+      ].join(" "),
+      beastArt!,
+      { aspectRatio: RITUAL_CINEMATIC_ASPECT, resolution: "1K" },
+    );
+    startUrl = keyframe.url;
+  }
+
+  const scenes: SceneDirection[] = ritual.acts.map((act, i) => ({
+    direction: `${act.staging}. Light: ${act.lightLanguage}`,
+    durationHint: Math.max(1, act.durationMs / 1000),
+    ...(i === 0 ? { refStartImage: startUrl } : {}),
+    // The reveal beat resolves onto the won beast's canonical art.
+    ...(i === ritual.acts.length - 1 && act.act === "reveal" && isUrl(beastArt)
+      ? { refEndImage: beastArt }
+      : {}),
+  }));
+  const totalSecs = Math.min(
+    SEEDANCE_MAX_SECS,
+    Math.max(SEEDANCE_MIN_SECS, Math.round(ritual.totalDurationMs / 1000)),
+  );
+
+  const result = await generateSceneSequence(scenes, {
+    totalDuration: totalSecs,
+    aspectRatio: RITUAL_CINEMATIC_ASPECT,
+    resolution: RITUAL_CINEMATIC_RESOLUTION,
+    // Rituals/ceremonies want the synced native SFX (free on Seedance 2.0).
+    generateAudio: true,
+    globalDirection:
+      `A staged casino-grade reveal ritual in a pixel-art game world, one continuous stage, dramatic light. ` +
+      `No text, captions, logos or UI anywhere. SOUND: the staged cues only — rattling crate, cracking seal, a rarity flare bloom — no speech, no music.`,
+  });
+
+  const basePath = input.beast?.storagePath || `misc/${input.beast?.mint || "lootbox"}`;
+  return storeArtifact(store, {
+    kind: "ritual_cinematic",
+    key: `${basePath}/gameplay/ritual-${ritual.kind}-${Date.now()}.mp4`,
+    buffer: result.master.buffer,
+    contentType: "video/mp4",
+    model: result.segments[0]?.model,
+    requestId: result.segments[0]?.requestId,
+  });
 }
 
 export async function generateLootboxRevealRitual(
@@ -423,6 +528,21 @@ export async function generateLootboxRevealRitual(
 ): Promise<RitualContentResult> {
   const ritual = buildLootboxRevealRitual(input);
   const result: RitualContentResult = { ritual, artifacts: [] };
+  if (input.includeCinematic) {
+    try {
+      const cinematic = await buildLootboxCinematic(
+        ritual,
+        input,
+        opts.store || getDefaultArtifactStore(),
+      );
+      if (cinematic) {
+        result.cinematic = cinematic;
+        result.artifacts.push(cinematic);
+      }
+    } catch (e: any) {
+      logger.warning(`ritual: lootbox cinematic failed — definition still ships: ${e?.message || e}`);
+    }
+  }
   if (input.includeDialogue && input.beast && ritual.kind !== "lootbox_miss") {
     const moment: MomentType =
       ritual.kind === "lootbox_win" ? "lootbox_jackpot" : "lootbox_near_miss";

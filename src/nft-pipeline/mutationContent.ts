@@ -13,9 +13,14 @@
  *   - evolution      → IMMEDIATE full regen (base body + DP) FIRST so the
  *     transition + fresh state loops use the evolved look, then transition +
  *     dialogue. The evolution transition is the 3-beat CEREMONY
- *     (CHARGE → BURST → REVEAL, src/world/progression.ts) choreographed
- *     across the strip's keyframes — the whole strip passes the Gemini
- *     identity gate, so every beat is gated.
+ *     (CHARGE → BURST → REVEAL, src/world/progression.ts) rendered as ONE
+ *     Seedance 2.0 multi-scene generation (~12s, in-prompt cuts, native
+ *     synced impact SFX): start frame = the PRE-evolution canonical art,
+ *     end frame = the evolved canonical art, so identity is anchored by
+ *     construction on both sides of the whiteout. Budget mode
+ *     (`budgetMode: true` or NFT_CEREMONY_BUDGET_MODE=true) falls back to
+ *     the legacy 3-keyframe chroma-strip APNG choreography — which is also
+ *     the automatic fallback when the video generation fails.
  *
  * Power transitions render the NAMED country × lane technique (B4) and the
  * result carries techniqueUsed { name, isDebut? } so debuts can be recorded.
@@ -26,7 +31,12 @@
  * job is dispatched at all.
  */
 import { generateText } from "../service/llm.js";
-import { fetchAsBuffer } from "../utils/falMedia.js";
+import {
+  fetchAsBuffer,
+  generateSceneSequence,
+  SEEDANCE_MAX_SECS,
+  SEEDANCE_MIN_SECS,
+} from "../utils/falMedia.js";
 import { logger } from "../utils/logger.js";
 import { countryBible } from "../world/bible.js";
 import { baseTypeMascotPhrase, safeBaseType } from "../world/baseTypes.js";
@@ -58,6 +68,17 @@ import {
 
 export type MutationKind = "visual" | "power" | "evolution";
 const POWER_SLOTS = 5;
+
+// ── Evolution ceremony video (Seedance 2.0 multi-scene) ──
+// Budget mode = the legacy 3-keyframe chroma-strip APNG path (1 image call
+// instead of 1 video call). Also used automatically when the video fails.
+const CEREMONY_BUDGET_MODE = process.env.NFT_CEREMONY_BUDGET_MODE === "true";
+const CEREMONY_VIDEO_SECS = Math.min(
+  SEEDANCE_MAX_SECS,
+  Math.max(SEEDANCE_MIN_SECS, Number(process.env.NFT_CEREMONY_VIDEO_SECS || 12)),
+);
+const CEREMONY_VIDEO_RESOLUTION = process.env.NFT_CEREMONY_VIDEO_RESOLUTION || "720p";
+const CEREMONY_VIDEO_ASPECT = process.env.NFT_CEREMONY_VIDEO_ASPECT || "1:1";
 
 // Map a gameplay moment to the frontend's existing SFX id.
 const SOUND_BY_KIND: Record<MutationKind, string> = {
@@ -312,6 +333,12 @@ export interface NftMutationContentInput {
    * dialogue line. See beastMemory.ts for the contract.
    */
   memory?: BeastMemorySnapshot;
+  /**
+   * evolution only: force the legacy 3-keyframe chroma-strip ceremony instead
+   * of the single Seedance multi-scene generation (cheaper: 1 image call vs
+   * 1 video call). Env-wide switch: NFT_CEREMONY_BUDGET_MODE=true.
+   */
+  budgetMode?: boolean;
 }
 
 export interface NftMutationContentResult {
@@ -332,6 +359,66 @@ export interface NftMutationContentResult {
    */
   techniqueUsed?: { name: string; isDebut?: boolean };
   artifacts: NftArtifact[];
+}
+
+/**
+ * The evolution ceremony as ONE Seedance 2.0 multi-scene generation (~12s):
+ * CHARGE → BURST → REVEAL as in-prompt cuts, native synced impact SFX, start
+ * frame = the PRE-evolution canonical art, end frame = the evolved canonical
+ * art. Identity is anchored by construction (both frames ARE the canon), so
+ * no Gemini gate is needed on the in-betweens. Returns null when either
+ * canonical look is not URL-addressable (inline artifact mode) — the caller
+ * then falls back to the chroma-strip path.
+ */
+export async function buildEvolutionCeremonyVideo(
+  beast: NftBeastInput,
+  profile: BeastProfile,
+  newStage: number | undefined,
+  store: ArtifactStore,
+  extra: { fromStage?: number; preEvolutionLookUrl?: string } = {},
+): Promise<NftArtifact | null> {
+  const isUrl = (u?: string) => Boolean(u && /^https?:\/\//i.test(u));
+  const startUrl = extra.preEvolutionLookUrl;
+  const endUrl = beast.assetUrls?.fullBody || beast.assetUrls?.dp; // evolved (post-refresh)
+  if (!isUrl(startUrl) || !isUrl(endUrl)) return null;
+
+  const to = normalizeStage(newStage ?? profile.evolutionStage + 1);
+  const from = normalizeStage(
+    typeof extra.fromStage === "number" ? extra.fromStage : Math.max(0, to - 1),
+  );
+  const beats = evolutionCeremony(profile.factionId, from, to);
+
+  // ~40% charge / ~25% burst / ~35% reveal of the ceremony window.
+  const total = CEREMONY_VIDEO_SECS;
+  const chargeSecs = Math.max(2, Math.round(total * 0.4));
+  const burstSecs = Math.max(2, Math.round(total * 0.25));
+  const revealSecs = Math.max(2, total - chargeSecs - burstSecs);
+
+  const result = await generateSceneSequence(
+    [
+      { direction: beats[0].action, refStartImage: startUrl, durationHint: chargeSecs },
+      { direction: beats[1].action, durationHint: burstSecs },
+      { direction: beats[2].action, refEndImage: endUrl, durationHint: revealSecs },
+    ],
+    {
+      totalDuration: total,
+      aspectRatio: CEREMONY_VIDEO_ASPECT,
+      resolution: CEREMONY_VIDEO_RESOLUTION,
+      // Synced impact SFX sell the whiteout — native audio is free on 2.0.
+      generateAudio: true,
+      globalDirection:
+        `A single ${profile.factionName} HashBeast character evolving — keep its identity, face, colors, markings, gear and pixel-art style IDENTICAL to the start frame throughout; during the whiteout the silhouette stays readable inside the light. ` +
+        `No text, captions, logos or UI anywhere. SOUND: rising charge hum, one huge whiteout impact, then a settling aura shimmer — no speech, no music.`,
+    },
+  );
+  return storeArtifact(store, {
+    kind: "transition",
+    key: `${beast.storagePath || `misc/${beast.mint}`}/gameplay/transition-evolution-${Date.now()}.mp4`,
+    buffer: result.master.buffer,
+    contentType: "video/mp4",
+    model: result.segments[0]?.model,
+    requestId: result.segments[0]?.requestId,
+  });
 }
 
 /** Build a transition clip (frame-strip APNG, non-boomerang) for the moment. */
@@ -374,6 +461,11 @@ export async function generateMutationContent(
     artifacts,
   };
 
+  // The PRE-evolution canonical look — captured before the refresh swaps
+  // beast.assetUrls to the evolved art. It anchors the ceremony video's start
+  // frame (the form the beast evolves FROM).
+  const preEvolutionLookUrl = beast.assetUrls?.fullBody || beast.assetUrls?.dp;
+
   // 1. Evolution → full regen FIRST so the transition + new loops use the
   //    evolved look. Visual refresh only when explicitly requested.
   let refreshed: RefreshedAssets | null = null;
@@ -407,12 +499,30 @@ export async function generateMutationContent(
   }
 
   // 2. Transition clip (evolution = the 3-beat ceremony; power = the named
-  //    country × lane technique's visual grammar).
+  //    country × lane technique's visual grammar). Evolutions render as ONE
+  //    Seedance multi-scene generation (CHARGE/BURST/REVEAL in-prompt cuts,
+  //    pre-evolution start frame, evolved end frame, synced SFX); the
+  //    chroma-strip APNG remains the budget-mode + failure fallback.
   try {
-    const transition = await buildTransition(beast, input.kind, profile, input.newStage, store, {
-      fromStage: input.fromStage,
-      traitIndex: input.traitIndex,
-    });
+    let transition: NftArtifact | null = null;
+    if (input.kind === "evolution" && !input.budgetMode && !CEREMONY_BUDGET_MODE) {
+      try {
+        transition = await buildEvolutionCeremonyVideo(beast, profile, input.newStage, store, {
+          fromStage: input.fromStage,
+          preEvolutionLookUrl,
+        });
+      } catch (e: any) {
+        logger.warning(
+          `mutation: ceremony video failed — falling back to strip: ${e?.message || e}`,
+        );
+      }
+    }
+    if (!transition) {
+      transition = await buildTransition(beast, input.kind, profile, input.newStage, store, {
+        fromStage: input.fromStage,
+        traitIndex: input.traitIndex,
+      });
+    }
     if (transition) {
       result.transition = transition;
       artifacts.push(transition);
