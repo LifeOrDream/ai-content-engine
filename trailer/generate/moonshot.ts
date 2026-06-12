@@ -118,14 +118,20 @@ const SHOTS: ShotSpec[] = [
       refs: [mref("chars", "southkorea.png"), mref("minted", "hashbeast3_southkorea_white_jindo.png")],
       prompt:
         "Identical extreme close-up of the same white astronaut helmet filling the vertical frame, same lighting, " +
-        "but the gold visor is now RAISED/transparent: inside the helmet is the South Korea Jindo game character — " +
-        "an orange-tan jindo dog with cream muzzle, calm deadpan half-lidded eyes, exactly matching the reference " +
-        "character's face and fur — chewing gum, a small pink bubblegum bubble just starting between his lips. " +
+        "but the gold visor is now RAISED/transparent: inside the helmet is EXACTLY the South Korea jindo game " +
+        "character from the reference images — copy his face geometry from the references: lean fox-like jindo " +
+        "muzzle, alert pointed ears, sharp almond eyes kept calm/half-lidded/deadpan, orange-tan fur with cream " +
+        "muzzle, in the same pixel-art rendering as the reference character. At his neck, just inside the white " +
+        "flight-suit collar, his game costume is clearly visible: the light-blue hanbok collar with pink ribbon " +
+        "trim from the reference. He is chewing gum, a small pink bubblegum bubble just starting between his lips. " +
+        "NOT the doge meme face, NOT a generic round-cheeked shiba inu — this one specific game character only. " +
         "Soft helmet interior lights on his face, faint orange sun glow rim light.",
     },
     timelinePrompt:
       "GLOBAL: extreme close-up on an astronaut helmet filling the vertical frame; dead-straight aerospace tone that " +
-      "breaks into deadpan comedy. The character inside is an orange-tan jindo dog, kept perfectly on-model. " +
+      "breaks into deadpan comedy. The character inside is the South Korea jindo game character — lean fox-like " +
+      "jindo muzzle, light-blue hanbok collar with pink ribbon trim visible inside the suit collar — kept perfectly " +
+      "on-model to the end frame, never drifting toward a generic shiba. " +
       "0.00-2.20s: hold on the opaque gold visor, the orange coin-sun reflection shimmering subtly, tiny handheld drift. " +
       "2.20-3.20s: the gold visor smoothly clears/raises, revealing the jindo dog's deadpan face inside the helmet, chewing gum slowly. " +
       "3.20-5.00s: he keeps chewing, stares past camera, blows a small pink bubblegum bubble and it POPS at 4.50s; he keeps chewing, unbothered. " +
@@ -210,7 +216,16 @@ const SHOTS: ShotSpec[] = [
 ];
 
 // ─── locked VO (verbatim from the approved script) ──────────────────────────
-const VO_LINES = [
+interface VoLine {
+  id: string;
+  voice: string;
+  text: string;
+  at: { seq: number; offset: number };
+  speed: number;
+  /** Fit the rendered read into this many seconds (pause-tightening + capped atempo). */
+  maxSeconds?: number;
+}
+const VO_LINES: VoLine[] = [
   { id: "control_tminus", voice: "control", text: "T-minus ten.", at: { seq: 1, offset: 1.2 }, speed: 0.92 },
   { id: "control_go", voice: "control", text: "Flight, we are go for the moonshot.", at: { seq: 1, offset: 5.6 }, speed: 0.95 },
   { id: "control_fuel", voice: "control", text: "Fuel status?", at: { seq: 3, offset: 0.5 }, speed: 0.95 },
@@ -221,14 +236,21 @@ const VO_LINES = [
     text:
       "Pick your country. Bet SOL. Sixty seconds a round. Win, your beast mines degenBTC — " +
       "and the war writes a show with your character in it.",
-    at: { seq: 5, offset: 0.35 },
+    at: { seq: 5, offset: 0.1 }, // starts right on the silence→arcade cut
     speed: 1.18, // plain speech, fast
+    // MiniMax renders this ~9.7s — too long for the 8.0s montage and it
+    // collided with the seq-6 closer. Fitted post-gen (internal-pause
+    // tightening + capped atempo) down to the montage window.
+    maxSeconds: 8.2,
   },
   {
     id: "closer_dogs",
     voice: "gravel",
     text: "Ten years of 'to the moon.' Somebody had to build the dogs.",
-    at: { seq: 6, offset: 0.5 },
+    // +1.8 so phrase 1 rides the liftoff, the sentence gap straddles the cut
+    // (the bell strikes inside it), and the punchline lands on the ringing
+    // end card instead of fighting the montage explainer's tail.
+    at: { seq: 6, offset: 1.8 },
     speed: 0.98,
   },
 ];
@@ -289,7 +311,7 @@ async function main() {
   if (stage === "all" || stage === "frames") await stageFrames(falMedia);
   if (stage === "all" || stage === "clips") await stageClips(falMedia, ffmpeg);
   if (stage === "montage") await stageMontage(ffmpeg);
-  if (stage === "all" || stage === "audio") await stageAudio(falMedia);
+  if (stage === "all" || stage === "audio") await stageAudio(falMedia, ffmpeg);
   if (stage === "all" || stage === "assemble") await stageAssemble(ffmpeg);
   console.log("\n✅ done\n");
 }
@@ -399,7 +421,10 @@ async function stageMontage(ffmpeg: typeof import("./ffmpeg.js")) {
 }
 
 // ─── STAGE: audio (MiniMax TTS VO + stable-audio score) ──────────────────────
-async function stageAudio(falMedia: typeof import("../../src/utils/falMedia.js")) {
+async function stageAudio(
+  falMedia: typeof import("../../src/utils/falMedia.js"),
+  ffmpeg: typeof import("./ffmpeg.js"),
+) {
   console.log("\n— STAGE audio (MiniMax VO + stable-audio score)");
   const voicesFile = path.join(AUDIO, "voices.json");
   const voices: Record<string, string> = fs.existsSync(voicesFile) ? JSON.parse(fs.readFileSync(voicesFile, "utf8")) : {};
@@ -417,7 +442,9 @@ async function stageAudio(falMedia: typeof import("../../src/utils/falMedia.js")
     if (fs.existsSync(file) && !REGEN) { console.log(`   vo ${line.id}: cached`); continue; }
     process.stdout.write(`   vo ${line.id}… `);
     const audio = await falMedia.generateSpeech(voices[line.voice], line.text, { emotion: "neutral", speed: line.speed, language: "English" });
-    fs.writeFileSync(file, audio.buffer);
+    let buf = audio.buffer;
+    if (line.maxSeconds) buf = await fitVoDuration(ffmpeg, buf, line.maxSeconds);
+    fs.writeFileSync(file, buf);
     ledger({ stage: `tts:${line.id}`, kind: "tts", model: audio.model, requestId: audio.requestId });
     console.log("✓");
   }
@@ -457,6 +484,44 @@ async function stageAudio(falMedia: typeof import("../../src/utils/falMedia.js")
     ledger({ stage: `audio:${cue.file}`, kind: "audio", model: (a as any).model, requestId: (a as any).requestId });
     console.log("✓");
   }
+}
+
+/**
+ * Fit a VO read into `maxSeconds` without wrecking the delivery: first
+ * tighten internal pauses (each silence collapses to ~180ms), then — only if
+ * still long — a gentle pitch-preserving atempo, capped at 1.25×.
+ */
+async function fitVoDuration(
+  ffmpeg: typeof import("./ffmpeg.js"),
+  buf: Buffer,
+  maxSeconds: number,
+): Promise<Buffer> {
+  let dur = await ffmpeg.probeDuration(buf, "mp3");
+  if (!dur || dur <= maxSeconds) return buf;
+  const dir = ffmpeg.tmpDir("vofit");
+  try {
+    const i = path.join(dir, "in.mp3");
+    const o = path.join(dir, "out.mp3");
+    fs.writeFileSync(i, buf);
+    await ffmpeg.execFileP("ffmpeg", [
+      "-y", "-i", i,
+      "-af", "silenceremove=stop_periods=-1:stop_duration=0.18:stop_threshold=-38dB",
+      "-c:a", "libmp3lame", "-q:a", "2", o,
+    ], { maxBuffer: 1 << 26 });
+    let out = fs.readFileSync(o);
+    dur = await ffmpeg.probeDuration(out, "mp3");
+    if (dur > maxSeconds) {
+      const tempo = Math.min(1.25, dur / maxSeconds);
+      const o2 = path.join(dir, "out2.mp3");
+      await ffmpeg.execFileP("ffmpeg", [
+        "-y", "-i", o, "-af", `atempo=${tempo.toFixed(4)}`,
+        "-c:a", "libmp3lame", "-q:a", "2", o2,
+      ], { maxBuffer: 1 << 26 });
+      out = fs.readFileSync(o2);
+    }
+    process.stdout.write(`fitted ${dur.toFixed(1)}s→${(await ffmpeg.probeDuration(out, "mp3")).toFixed(1)}s… `);
+    return out;
+  } finally { ffmpeg.rmDir(dir); }
 }
 
 // ─── STAGE: assemble ─────────────────────────────────────────────────────────
