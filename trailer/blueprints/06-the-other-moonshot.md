@@ -3,147 +3,80 @@ id: 06-the-other-moonshot
 title: THE OTHER MOONSHOT
 genre: story
 aspect: 9:16
-targetSeconds: 40
-minSeconds: 34
+targetSeconds: 42
+minSeconds: 42
 countdown: 00:00:00
-cta: the dogs finally go to the moon — minebtc.fun · LAUNCH JULY 10
-logline: A dead-straight rocket-launch teaser cracks open when the astronaut's visor reflects a HashBeast — Wall Street IPO'd the rocket, but twelve dog nations are mining the fuel, and the back third tells you exactly how to join the war.
-cast: Rex, Pip
+cta: minebtc.fun · JULY 10
+logline: A dead-straight aerospace launch film cracks open — the astronaut is the Korea Jindo, the fuel is being mined by twelve dog nations, and the text card says it plainly — SpaceX IPO'd the rocket; we're IPO-ing the fuel.
+cast: Korea Jindo (real game character), USA Golden Retriever (real game character), twelve country beasts
 ---
 
-# Blueprint 06b — THE OTHER MOONSHOT (launch teaser, ~40s, vertical)
+# Blueprint 06 — THE OTHER MOONSHOT (founder-approved, LOCKED)
 
-This is the MineBTC launch teaser. It is a SpaceX-IPO parody and it must SAY so
-out loud — the founder approved explicit parody naming. Structure: (1) open as
-a 100% straight-faced cinematic rocket-launch teaser, (2) crack the frame open
-when the astronaut visor reflects a HashBeast, (3) pull back to the twelve
-country beasts racing/mining to fund the rocket, (4) the back third EXPLAINS
-the game explicitly (the audience has never heard of it), (5) end card.
+The founder signed off this script VERBATIM. This blueprint is NOT rough story
+clay for the writers-room passes — it is the locked shot list the production
+renders exactly as written. No rewrites, no line doctoring, no alternate hooks.
 
-## HOOK
-Open dead straight: pre-dawn launch pad, gantry fog rolling through red service
-lights, a towering rocket venting steam, a calm mission-control countdown voice
-under low engine rumble. NOTHING comedic, NOTHING dog. It must be
-indistinguishable from a real aerospace teaser for the first beats. The stun is
-the FLIP: a slow push toward the astronaut's gold visor — and the reflection in
-the glass is a HashBeast muzzle. The astronaut IS Rex in a flight suit. The
-viewer's question: "wait — what is actually being launched here?"
+## APPROVED SCRIPT (verbatim — these exact words, no rewrites)
 
-## THE JOKE MUST LAND EXPLICITLY (founder-approved parody)
-This is a SpaceX IPO parody, said in plain words, not implied. Rex's reveal
-beat must carry these two lines (spoken, in his hype-man voice — protect them):
-- protect: "SpaceX just IPO'd the rocket."
-- protect: "We're IPO-ing the fuel."
-It is clearly a gag — never imply SpaceX endorses anything; no real persons, no
-real logos or wordmarks rendered in any frame (parody lives in VOICE and
-post-burned captions only).
+- 0:00-0:05 black -> launch gantry in fog, strobes, dead-straight aerospace look. Mission control VO (calm, procedural): "T-minus ten."
+- 0:05-0:10 slow push on the rocket, low rumble building. Control VO: "Flight, we are go for the moonshot."
+- 0:10-0:15 astronaut helmet fills frame, orange bitcoin sun reflected in visor; visor clears: it is the KOREA JINDO (real game character), chewing gum, gum pop. No line — the pop is the joke.
+- 0:15-0:20 smash cut: twelve country beasts mining in a frenzy, ore becoming glowing fuel cells loaded toward the pad. Control VO: "Fuel status?" USA shiba, mid-swing, not looking up: "Mining it."
+- 0:20-0:25 beasts gathered under a giant stock ticker; music cuts to silence. Composited text card (use the real text/end-card machinery, NOT generated-in-image text): "SPACEX IPO'D THE ROCKET." (beat) "WE'RE IPO-ING THE FUEL."
+- 0:25-0:33 rapid game montage: arena board, 60s countdown, win FX, evolution burst — REAL PRODUCT FOOTAGE preferred: capture screen recordings/screenshots from the live frontend (npm run dev in mdogeWifBtcFE with the dummy FX harness in hooks/config.ts flipped on for capture, ALWAYS reverted after; or use generated keyframes of the real UI as fallback). VO, plain speech, fast: "Pick your country. Bet SOL. Sixty seconds a round. Win, your beast mines degenBTC — and the war writes a show with your character in it." Captions mirror the beats.
+- 0:33-0:38 the rocket lifts; one beast watches from the dig site, then goes back to swinging. VO, dry: "Ten years of 'to the moon.' Somebody had to build the dogs."
+- 0:38-0:42 end card, single pickaxe strike ringing like a bell: minebtc.fun · JULY 10 + the Hashiden mark (mdogeWifBtcFE/public/assets/brand/hashiden/hashiden-mark.webp).
 
-## GROUNDING TO WEAVE (story/metaphor, not bullet points)
-- Wall Street just got its moonshot priced and sold to it. The hidden HashBeast
-  world is running the OTHER moonshot: a mining war that funds the launch.
-- Under/behind the launch pad: the twelve country beasts racing to mine glowing
-  degenBTC ore that feeds the rocket like fuel — Japan's samurai beast slicing
-  through rock in cherry-blossom sparks, India's white sorcerer hound throwing
-  blue lightning at a seam, Russia, China, USA all competing, not cooperating.
-  The war IS the fuel pump.
-- One minted recruit cameo: a real collectible pup (the actual minted Hashbeast
-  #1, a red Golden Retriever pup in a snapback) saluting Rex before the doors
-  close — the "anyone can mint in" promise without saying it.
-- BACK THIRD (explicit explainer — the audience does not know this game; the
-  ON-SCREEN channel carries one fact per shot, the mouth keeps the swagger):
-  bet SOL on your country → 60-second rounds → mine degenBTC → your HashBeast
-  evolves → the war writes an AI show (HASHIDEN). The end card seals it.
+## CASTING CORRECTIONS LOCKED BY THE APPROVED SCRIPT
 
-## BEATS (action + intent — dialogue gets written by the pipeline)
-1. [hook] Straight aerospace teaser: fog, gantry, venting rocket, red beacons,
-   mission-control countdown voice ("T-minus..."), bass rumble. INTENT: earn
-   total believability so the flip hits. Frame 1 is the poster: the rocket
-   small at the base of frame, astronaut helmet huge in foreground profile.
-2. [turn] Slow push on the gold visor → the reflection is a HashBeast muzzle.
-   Rex flips the visor up: golden retriever grin, USA cap silhouette under the
-   helmet liner. He talks straight to camera and lands the parody EXPLICITLY
-   (the two protected lines live here). INTENT: the rug-pull — this was never
-   an aerospace ad.
-3. [escalation] Pull back / drop below the pad: a vast mine-cathedral under the
-   launch site. The twelve country beasts race to carve glowing ore; conveyor
-   rivers of light feed the rocket's tanks. Japan slices, India storms, Russia
-   freezes a seam and shatters it, China's strategist watches one extra beat.
-   Music flips from launch-suspense to electric arcade HERE. INTENT: scale —
-   this is a WAR pretending to be a fueling operation.
-4. [affection] Pip, tiny in a too-big flight jacket, holds a glowing ore shard
-   like it might hatch; the minted recruit pup salutes Rex. One small sincere
-   beat amid the chaos. INTENT: make it lovable, not just loud.
-5. [explainer] Rex sells the game over fast gameplay-flavored war shots; the
-   ON-SCREEN channel does the teaching, one fact per shot, in this order:
-   "BET SOL ON YOUR COUNTRY" → "60-SECOND ROUNDS" → "MINE degenBTC" →
-   "YOUR HASHBEAST EVOLVES" → "THE WAR WRITES HASHIDEN". Rex's mouth keeps
-   emotion/swagger only (no mechanic words in dialogue). INTENT: a stranger
-   understands the loop in ten seconds.
-6. [cliffhanger] Back topside: ignition glow under the rocket; Rex drops the
-   visor, the HashBeast reflection grins back at the viewer. He says the line
-   (protect): "The dogs finally go to the moon." Hard cut to black before
-   liftoff — the launch itself is the next episode. INTENT: open the loop.
-7. [end_card] Deterministic brand end card (NOT a generated scene): the
-   assembly pipeline burns "THE DOGS FINALLY GO TO THE MOON / minebtc.fun /
-   LAUNCH JULY 10".
+- The astronaut is the KOREA JINDO — the real game character from the live
+  southkorea GIF — not Rex, not any cast-sheet character. No line; the gum pop
+  is the joke.
+- "USA shiba" is a script direction; it RENDERS as the real USA game character
+  (golden retriever). NO generic shibas — off-model renders get regenerated.
+- The SpaceX/IPO beat is a COMPOSITED TEXT CARD over silence, not spoken
+  dialogue.
+- The 0:25-0:33 explainer is spoken VO, plain speech, fast — the mechanic words
+  ("Pick your country. Bet SOL. Sixty seconds a round...") are the approved VO,
+  with captions mirroring the beats.
+- The closer VO is: "Ten years of 'to the moon.' Somebody had to build the
+  dogs."
 
-## TAGLINE (writers room picks ONE for the payoff/cliffhanger ON-SCREEN or overlay)
-- "Wall Street priced the rocket. The dogs mine the fuel."
-- "The other moonshot."
-Pick whichever lands harder next to the protected lines; do not use both as
-captions (one may live as a hook/cliffhanger candidate).
+## NON-NEGOTIABLE GROUNDING (founder, standing)
 
-## OVERLAY SUGGESTION (0-2, writers room decides)
-A hook-riding head-fake overlay like "this is not a SpaceX ad" is on-brand for
-the parody; a cliffhanger CTA is optional (the end card already carries the
-date + URL).
+Every character keyframe is generated via nano-banana-2/edit WITH real
+reference images, checked into `trailer/reference/moonshot/`:
 
-## GROUNDING REFS — REAL GAME ASSETS (MANDATORY in frame plans)
-Every startFrame that shows a country beast MUST anchor identity on the real
-game assets below (these are extracted frames of the live game's character
-GIFs + real minted collectible portraits, checked into trailer/reference).
-Use 1 asset ref per visible country beast plus the usual @cast/state and
-country board refs, ≤8 refs total. NO generic shibas — if a beast could be
-mistaken for a generic doge meme, the frame is wrong.
-- asset:moonshot/chars/usa.png (USA golden retriever, red-gold hero armor)
-- asset:moonshot/chars/japan.png (Japan shiba samurai, cherry-blossom slash)
-- asset:moonshot/chars/india.png (India white sorcerer hound, blue lightning)
-- asset:moonshot/chars/russia.png · asset:moonshot/chars/china.png ·
-  asset:moonshot/chars/uk.png · asset:moonshot/chars/france.png ·
-  asset:moonshot/chars/brazil.png · asset:moonshot/chars/israel.png ·
-  asset:moonshot/chars/iran.png · asset:moonshot/chars/southkorea.png ·
-  asset:moonshot/chars/northkorea.png
-- asset:moonshot/minted/hashbeast1_usa_golden_retriever.png (the REAL minted
-  Hashbeast #1 — red Golden Retriever pup, snapback; reproduce faithfully for
-  the recruit cameo)
-- asset:moonshot/minted/hashbeast3_southkorea_white_jindo.png (real minted
-  Hashbeast #3 — White Jindo, baseball cap; optional second cameo)
-Rex's astronaut look is a STATE of his locked cast sheet (e.g. @rex:flight_suit
-— same face, fur, cap lineage; helmet under arm or visor up).
+- `asset:moonshot/chars/{southkorea,usa,japan,china,russia,india,uk,brazil,iran,israel,northkorea,france}.png`
+  — clean frames extracted from the live game character GIFs at
+  `https://assets.minebtc.fun/frontend/gameAssets/chars/<country>.gif?v=2`.
+- `asset:moonshot/minted/hashbeast1_usa_golden_retriever.png` and
+  `asset:moonshot/minted/hashbeast3_southkorea_white_jindo.png` — the real
+  minted portraits resolved from
+  `https://assets.minebtc.fun/hashbeasts/3RcBXFng5minophzhYdMNNaePnpdDCpq1hAHRYwnihs3.json`
+  and `…/6Gy8SGiFLnGGu8HiH19FC5kTWa9DueZ6K4Fm8RXuiuj6.json` -> `.image`
+  (byte-verified against the live CDN).
 
-## HARD RULES (founder, standing)
-- No country flags as CLOTHING on any generated character (planted flags and
-  flag objects are fine; the minted cameo reproduces its real collectible
-  reference faithfully and is exempt).
-- No readable text, logos, or wordmarks inside generated frames — all text is
-  post-burned (captions/overlays/end card). The SpaceX gag is spoken + caption
-  only; the rocket is a GENERIC commercial launch vehicle, no livery.
-- Country-level satire only; never depict real named individuals.
+Hard rules:
+- NO generic shibas — off-model renders get regenerated.
+- No flags as clothing (planted flags fine).
+- No readable text inside GENERATED frames — composited text via the branding
+  utilities only. The rocket is a generic commercial launch vehicle, no livery,
+  no real logos or wordmarks in any frame.
+- FAL key stays in env — never printed.
 
-## DIALOGUE WARNING
-The explainer facts are ON-SCREEN copy, not mouth copy. Do not put "bet SOL",
-"60-second rounds", "mine degenBTC", "evolves", "AI show", or any mechanic
-word in anyone's mouth — Rex sells with status, jokes, and dares. The two
-protected IPO lines and the protected moon line are the only scripted-feeling
-lines allowed, and they are character flexes, not features.
+## PIPELINE (locked)
 
-## MUSIC BRIEF
-One bed, two faces: cinematic launch-suspense (low strings, sub rumble, sparse
-ticking percussion, NASA-broadcast gravity) for the straight open, FLIPPING at
-the underground reveal into electric arcade synth war-drums (bright, driving,
-chiptune-edged) through the explainer, then one clean drop-out for the
-cliffhanger line. The flip should land exactly where the parody lands.
+keyframes (nano-banana-2/edit, refs attached) -> Seedance i2v per shot (5s
+shots, 720p, 9:16 master; 16:9 second pass ONLY if budget remains) -> VO via
+the MiniMax TTS path (calm procedural mission-control voice for control lines;
+dry gravelly for the shiba line + closer; if TTS keys absent, ship with music +
+captions and FLAG that VO needs a take) -> music via stable-audio (cinematic
+launch suspense 0:00-0:20, hard cut to silence 0:20-0:25, electric arcade
+0:25-0:38, single bell-strike 0:38) -> stitch + brand + end card via the
+existing ffmpeg/videoBrand/endCard utilities. BUDGET CAP: ~$20 fal total;
+prefer reusing keyframes across adjacent shots.
 
-## CLIFFHANGER
-Visor down, beast grin reflected in gold glass, ignition light rising:
-"The dogs finally go to the moon." Cut to black. End card: LAUNCH JULY 10.
+Production runner: `npx tsx trailer/generate/moonshot.ts` (resumable; artifacts
+cache under `trailer/out/06-the-other-moonshot/`, outputs gitignored as usual).
