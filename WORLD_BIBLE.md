@@ -137,6 +137,33 @@ Three rungs, one identity. Typed version: `STYLE_ELEVATION_LADDER`.
 
 ---
 
+## Base types ("forms are fluid")
+
+The body-plan layer ABOVE breed. Typed version: `src/world/baseTypes.ts`;
+engine docs: `docs/base-types.md`.
+
+| Base type | Availability | One-glance read |
+|-----------|--------------|-----------------|
+| **Canine** | Genesis default — every minted beast | The classic HashBeast dog; 48 per-country breeds |
+| **Primate** | Lootbox / rebirth only | Long-armed climb-and-swing acrobat (Macaque, Capuchin, Gibbon, Gorilla) |
+| **Amphibian** | Lootbox / rebirth only | Springy low-slung wide-mouthed meme-frog (Tree Frog, Bullfrog, Axolotl, Toad) |
+| **Feline** | Lootbox / rebirth only | Silent-precision cat-ninja (Shadow Cat, Siamese, Maine Coon, Sand Cat) |
+
+**Base-type rules:**
+
+1. Canine is canon for genesis and for the entire show cast (the Council of
+   Twelve and all lieutenants are dogs). Non-canine forms exist only through
+   the lootbox/rebirth path — the game backend grants them, never the engine.
+2. Country style modulates the base type: a Brazil primate (carnival blaze,
+   capoeira-flow swings) reads nothing like a Japan primate (onsen-macaque
+   calm, tech-ronin layers). Per-country skins live in the typed registry.
+3. Every hard canon rule holds on every base type: no flags as clothing, no
+   readable text in images, identity anchors survive the style ladder, and
+   every render passes the Gemini identity gate — which states the body plan
+   and rejects a beast that drifts back into reading as a dog.
+
+---
+
 ## Quick reference
 
 | Country | Palette (primary/secondary/accent/glow) | Voice | Mining tool (muggle) |

@@ -18,6 +18,7 @@
  */
 
 import { countryBible, type RivalryEdge } from "../world/bible.js";
+import { baseTypeMascotPhrase, safeBaseType } from "../world/baseTypes.js";
 import { performanceBand, normalizeStage } from "../world/progression.js";
 import { beastMemoryPromptBlock, type BeastMemorySnapshot } from "./beastMemory.js";
 import type { NftBeastInput } from "./types.js";
@@ -338,7 +339,7 @@ export function buildMomentDialoguePrompt(
   if (ctx.winStreak && ctx.winStreak >= 2) state.push(`its owner is on a ${ctx.winStreak}-win streak`);
   if (typeof ctx.totalWins === "number") state.push(`career wins: ${ctx.totalWins}`);
   return [
-    `You are the in-game announcer/voice of a ${nation} HashBeast (a stylized dog-warrior mascot) in a comedic country-vs-country crypto mining war.`,
+    `You are the in-game announcer/voice of a ${nation} HashBeast (a stylized ${baseTypeMascotPhrase(safeBaseType(beast.baseType))}) in a comedic country-vs-country crypto mining war.`,
     `Write ONE short spoken line (max 14 words) the beast shouts at this moment: ${g.directive(ctx, nation, rivalNation)}.`,
     `Body language on screen at this moment: ${g.bodyLanguage}. The line must match that physicality.`,
     p.archetype || p.tone

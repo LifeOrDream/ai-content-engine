@@ -14,6 +14,12 @@
  */
 import { designVoice, generateSpeech, FAL_MEDIA_CONFIG } from "../utils/falMedia.js";
 import { countryBible, FACTION_VOICE_HINTS, bibleLeader } from "../world/bible.js";
+import {
+  baseTypeDef,
+  baseTypeMascotPhrase,
+  DEFAULT_BASE_TYPE,
+  type BaseTypeId,
+} from "../world/baseTypes.js";
 import { logger } from "../utils/logger.js";
 
 export interface VoiceProfile {
@@ -21,6 +27,8 @@ export interface VoiceProfile {
   factionId: number;
   breedValue: number;
   stageBand: number;
+  /** Body-plan layer the voice was designed for (canine genesis default). */
+  baseType?: BaseTypeId;
   provider: string;
   voiceId: string;
   designPrompt: string;
@@ -75,8 +83,19 @@ export function stageBand(level: number): number {
   return idx < 0 ? STAGE_BANDS.length - 1 : idx;
 }
 
-export function voiceKeyFor(factionId: number, breedValue: number, level: number): string {
-  return `${factionId}:${breedValue % 4}:${stageBand(level)}`;
+/**
+ * Voice key: canine keeps the legacy `<faction>:<breed>:<band>` format (no
+ * re-design churn for existing beasts); non-canine base types get their own
+ * keyspace so a feline never reuses a dog voice.
+ */
+export function voiceKeyFor(
+  factionId: number,
+  breedValue: number,
+  level: number,
+  baseType: BaseTypeId = DEFAULT_BASE_TYPE,
+): string {
+  const core = `${factionId}:${breedValue % 4}:${stageBand(level)}`;
+  return baseType === "canine" ? core : `${baseType}:${core}`;
 }
 
 // Per-country accent / vocal character — single-sourced from the world bible.
@@ -88,14 +107,17 @@ export function buildVoiceDesignPrompt(
   factionId: number,
   breedName: string,
   band: number,
+  baseType: BaseTypeId = DEFAULT_BASE_TYPE,
 ): string {
   const code = factionCode(factionId);
   const hint = FACTION_VOICE_HINTS[code] || FACTION_VOICE_HINTS.usa;
   const factionName = countryBible(factionId)?.country || code;
   const bandTone = BAND_TONE[band] || BAND_TONE[BAND_TONE.length - 1] || "";
+  const timbreModifier = baseTypeDef(baseType).voiceTimbreModifier;
   return [
-    `Voice for an animated cartoon ${breedName} dog-warrior mascot representing ${factionName} in a high-energy country-vs-country battle game.`,
+    `Voice for an animated cartoon ${breedName} ${baseTypeMascotPhrase(baseType)} representing ${factionName} in a high-energy country-vs-country battle game.`,
     `Accent: ${hint.accent}. Character: ${hint.timbre}.`,
+    timbreModifier ? `Base-type timbre: ${timbreModifier}` : "",
     bandTone ? `Maturity: ${bandTone}.` : "",
     `Expressive, punchy, game-character delivery — not a calm narrator. Single character voice.`,
   ]
@@ -119,15 +141,16 @@ export async function ensureVoiceId(
   breedValue: number,
   level: number,
   breedName: string,
+  baseType: BaseTypeId = DEFAULT_BASE_TYPE,
 ): Promise<EnsuredVoice | null> {
   if (!FAL_MEDIA_CONFIG.hasFalKey) return null;
-  const key = voiceKeyFor(factionId, breedValue, level);
+  const key = voiceKeyFor(factionId, breedValue, level, baseType);
   try {
     const existing = await registry.get(key);
     if (existing?.voiceId) return { voiceId: existing.voiceId };
 
     const band = stageBand(level);
-    const description = buildVoiceDesignPrompt(factionId, breedName, band);
+    const description = buildVoiceDesignPrompt(factionId, breedName, band, baseType);
     const preview = bibleLeader(factionId)?.catchphrases?.[0];
     const { voiceId, previewUrl } = await designVoice(
       description,
@@ -139,6 +162,7 @@ export async function ensureVoiceId(
       factionId,
       breedValue: breedValue % 4,
       stageBand: band,
+      baseType,
       provider: "minimax",
       voiceId,
       designPrompt: description,

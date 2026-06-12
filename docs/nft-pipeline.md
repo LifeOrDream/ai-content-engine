@@ -34,17 +34,17 @@ No bucket names, hostnames, or credentials are hardcoded; everything comes from 
 
 DNA → prompt grammar → validated character art.
 
-- **Input** (`NftMintAssetsInput`): `mint`, `dna` (256-bit hex), `factionId`, `categoryValue`, `regionValue`, optional `referenceImageUrl` (breed base-body style anchor), optional `includeCinematic`.
+- **Input** (`NftMintAssetsInput`): `mint`, `dna` (256-bit hex), `factionId`, `categoryValue`, `regionValue`, optional `referenceImageUrl` (breed base-body style anchor), optional `includeCinematic`, optional `baseType` (`"canine"` default; `"primate" | "amphibian" | "feline"` for lootbox/rebirth beasts — strict-validated against `HASHBEAST_BASE_TYPE_ALLOWLIST`, see [base-types.md](base-types.md)).
 - **Pipeline**: decode DNA → resolve faction × category × region × breed traits → build the full-body prompt from the faction grammar (`src/prompts/`) → generate `full_body.png` (3:4) style-locked to the breed reference → **Gemini identity gate** (posture / pixel style / facing direction) with up to `NFT_MINT_MAX_RETRIES` regens → generate `dp.png` (1:1) from the full body → Gemini same-character gate → optional `cinematic.png` PFP portrait (non-blocking).
 - **Output** (`NftMintAssetsResult`): `storagePath` (`<faction>/<category>/<region>/<mint>`), artifacts, per-image validation summaries (attempts/passed/reason), and the exact prompt packet for reproducibility.
 - **Progress**: emits `{ step, percent, message }` via BullMQ `job.updateProgress` (`generating_full_body` → `uploading` → `generating_dp` → … → `completed`) so the backend can drive its mint-progress UX.
-- **References**: the breed base-body sprites are deployment assets. Pass `referenceImageUrl` per job, or configure `HASHBEAST_BASE_BODIES_DIR` / `HASHBEAST_BASE_BODIES_BASE_URL` (filenames in `BREED_BASE_BODIES`).
+- **References**: the breed base-body sprites are deployment assets. Pass `referenceImageUrl` per job, or configure `HASHBEAST_BASE_BODIES_DIR` / `HASHBEAST_BASE_BODIES_BASE_URL` (filenames in `BREED_BASE_BODIES`; non-canine base types resolve `basetypes/<baseType>/<breed>.png` under the same roots).
 
 ### 2. `nft.state_animations` — living-sprite state loops
 
 The chroma-strip method, used for the website's per-NFT mining / win / lose loops.
 
-- **Input** (`NftStateAnimationsInput`): `beast` (self-contained snapshot: mint, dna, canonical `assetUrls`, `storagePath`, personality), optional `states` subset, optional `includePower` + `traitIndex`, optional `knownTechniques` (backend-owned debut memory), optional `arc` (emotional-arc directive, see below).
+- **Input** (`NftStateAnimationsInput`): `beast` (self-contained snapshot: mint, dna, canonical `assetUrls`, `storagePath`, personality, optional `baseType` — see [base-types.md](base-types.md)), optional `states` subset, optional `includePower` + `traitIndex`, optional `knownTechniques` (backend-owned debut memory), optional `arc` (emotional-arc directive, see below).
 - **Output**: transparent looping APNG artifacts under `<storagePath>/animations/<state>.png` plus `produced[]`. With `includePower`, the result also carries `techniqueUsed { name, isDebut? }` — the named country × lane move the power clip rendered (`isDebut` only when `knownTechniques` was passed).
 
 #### The chroma-strip APNG method

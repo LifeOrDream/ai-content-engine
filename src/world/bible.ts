@@ -29,6 +29,11 @@
  * - No real politicians, real leader names/likenesses, real hate symbols, or
  *   ethnicity as the joke. Satire targets institutions and faction behavior.
  * - Every country reads as a key player: specific, modern, funny, dangerous.
+ *
+ * BASE TYPES ("forms are fluid"): canine is the genesis body plan; primate,
+ * amphibian, and feline forms enter ONLY through the lootbox/rebirth path.
+ * The base-type layer (silhouette language, movement grammar, voice timbre,
+ * per-country skinning, starter breed packs) lives in src/world/baseTypes.ts.
  */
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -79,7 +84,7 @@ export const STYLE_ELEVATION_LADDER: StyleElevationRung[] = [
       "docs hero scenes",
     ],
     styleContract:
-      "High-resolution 2D arcade-cel character art with pixel-art DNA: bold clean outlines, flat cel shading, premium bright key-art lighting, saturated faction colors, readable silhouette, expressive dog face, collectible country-specific gear. Feels animated and collectible — an upgrade of the sprite, never a different character.",
+      "High-resolution 2D arcade-cel character art with pixel-art DNA: bold clean outlines, flat cel shading, premium bright key-art lighting, saturated faction colors, readable silhouette, expressive beast face (canine by default; rebirth base types — primate, amphibian, feline — keep their own body plan), collectible country-specific gear. Feels animated and collectible — an upgrade of the sprite, never a different character.",
     never:
       "No raw low-res pixel mud, no photorealism, no generic 3D CGI, no anime defaults, no grimdark murk, no text in image, no flag-print clothing.",
   },

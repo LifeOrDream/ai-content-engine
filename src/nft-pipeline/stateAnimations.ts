@@ -37,6 +37,12 @@ import { logger } from "../utils/logger.js";
 import { resolveHashBeastTraits } from "../prompts/index.js";
 import { countryBible, MINING_TOOL_BY_CODE } from "../world/bible.js";
 import {
+  baseTypeMotionDirective,
+  baseTypeRenderNoun,
+  safeBaseType,
+  type BaseTypeId,
+} from "../world/baseTypes.js";
+import {
   normalizeStage,
   stagePerformance,
   techniqueFor,
@@ -123,12 +129,15 @@ export interface BeastProfile {
   factionCode: string;
   /** Evolution stage 0-7 (DNA first, snapshot fallback) — drives performance. */
   evolutionStage: number;
+  /** Body-plan layer (canine genesis default; snapshot-driven, best-effort). */
+  baseType: BaseTypeId;
 }
 
 /** Resolve country + wizard/muggle + stage flavor from DNA (best-effort). */
 export function resolveBeastProfile(beast: NftBeastInput): BeastProfile {
   const fid = beast.factionId ?? 0;
   const country = countryBible(fid);
+  const baseType = safeBaseType(beast.baseType);
   let isWizard = String(beast.storagePath || "").includes("/wand"); // heuristic fallback
   let occupation = "";
   let evolutionStage = normalizeStage(beast.evolutionStage ?? 0);
@@ -156,6 +165,7 @@ export function resolveBeastProfile(beast: NftBeastInput): BeastProfile {
     factionName: country?.country || `Faction ${fid}`,
     factionCode: country?.code || "usa",
     evolutionStage,
+    baseType,
   };
 }
 
@@ -241,14 +251,25 @@ export async function generateStrip(
     return null;
   }
 
-  const prompt = buildStripPrompt(action, personalityDirective(beast), extraDirective);
+  // Base-type aware: non-canine beasts inject their movement grammar (canine
+  // returns "" — legacy strip prompts unchanged) and the identity gate is told
+  // what kind of creature it is looking at.
+  const beastBaseType = safeBaseType(beast.baseType);
+  const motionDirective = baseTypeMotionDirective(beastBaseType);
+  const prompt = buildStripPrompt(
+    action,
+    personalityDirective(beast),
+    [motionDirective, extraDirective].filter(Boolean).join(" "),
+  );
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
       const strip = await generateImageEditFromBuffers(prompt, refs, {
         aspectRatio: "16:9",
         resolution: "1K",
       });
-      const check = await validateSameCharacter(dp, strip.url);
+      const check = await validateSameCharacter(dp, strip.url, {
+        characterNoun: baseTypeRenderNoun(beastBaseType),
+      });
       if (check.ok) {
         return { buffer: strip.buffer, url: strip.url, model: strip.model, requestId: strip.requestId };
       }

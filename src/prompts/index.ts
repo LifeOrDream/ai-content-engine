@@ -221,7 +221,12 @@ import {
   BRAZIL_MUGGLE_CATEGORIES,
 } from "./factions/brazil.prompts.js";
 
-import { getBreedForHashBeast } from "./breeds.prompts.js";
+import {
+  baseTypeRenderBlock,
+  getBreedForBaseType,
+  DEFAULT_BASE_TYPE,
+  type BaseTypeId,
+} from "../world/baseTypes.js";
 
 import {
   ISRAEL_FACTION,
@@ -327,6 +332,8 @@ export interface ResolvedHashBeastTraits {
   faction: FactionData;
   evolution: EvolutionData;
   type: TypeData;
+  /** Body-plan layer above breed ("canine" genesis default). */
+  baseType: BaseTypeId;
   breed: ResolvedBreedData;
   traits: {
     furColor: TraitData;
@@ -646,6 +653,8 @@ function resolveTraitData(
  * @param evolutionStage - Evolution stage (0-7)
  * @param typeValue - Type value (0-7 wizard, 8-15 muggle) from DNA type field
  * @param traits - Array of 7 trait values [furColor, headwear, outfit, weapon, accessory, expression, background]
+ * @param breedValue - Breed bits 0-3 (canine: per-country registry; other base types: starter pack index)
+ * @param baseType - Body-plan layer above breed ("canine" genesis default; non-canine via lootbox/rebirth)
  * @returns Complete resolved trait data as structured JSON
  */
 export function resolveHashBeastTraits(
@@ -654,6 +663,7 @@ export function resolveHashBeastTraits(
   typeValue: number,
   traits: number[],
   breedValue: number = 0,
+  baseType: BaseTypeId = DEFAULT_BASE_TYPE,
 ): ResolvedHashBeastTraits {
   const registry = FACTION_DATA_REGISTRY[factionId];
   if (!registry) {
@@ -728,8 +738,9 @@ export function resolveHashBeastTraits(
     background: resolveTraitData(background, registry.background),
   };
 
-  // Resolve breed data
-  const breedData = getBreedForHashBeast(factionId, breedValue);
+  // Resolve breed data (base-type aware: canine routes to the 48-breed
+  // per-country registry, other base types to their starter packs)
+  const breedData = getBreedForBaseType(baseType, factionId, breedValue);
   const breed: ResolvedBreedData = {
     value: breedValue,
     name: breedData.name,
@@ -742,6 +753,7 @@ export function resolveHashBeastTraits(
     faction,
     evolution,
     type,
+    baseType,
     breed,
     traits: resolvedTraits,
   };
@@ -764,6 +776,10 @@ export function buildImagePrompt(resolved: ResolvedHashBeastTraits): string {
   const { faction, evolution, type, breed, traits } = resolved;
 
   const characterType = type.isWizard ? "Wizard" : "Muggle";
+  // Non-canine base types inject their body-plan block (silhouette language,
+  // movement grammar, per-country skin). Canine returns "" — genesis prompts
+  // stay byte-identical to the legacy grammar.
+  const baseTypeBlock = baseTypeRenderBlock(resolved.baseType, faction.id);
 
   return `You are creating a character for our game world. Generate this character based on its origin, occupation, breed, and appearance traits.
 
@@ -786,7 +802,7 @@ Visual Style: ${type.prompt}
 
 BREED / BODY TYPE:
 ${breed.name} — ${breed.bodyPrompt}
-
+${baseTypeBlock ? `\n${baseTypeBlock}\n` : ""}
 EVOLUTION STAGE:
 ${evolution.name} - ${evolution.size}, ${evolution.demeanor}
 
@@ -818,6 +834,8 @@ OUTPUT: High quality character portrait, game art style, vibrant colors, detaile
  * @param evolutionStage - Evolution stage (0-7)
  * @param typeValue - Type value (0-7 wizard, 8-15 muggle) from DNA type field
  * @param traits - Array of 7 trait values [furColor, headwear, outfit, weapon, accessory, expression, background]
+ * @param breedValue - Breed bits 0-3
+ * @param baseType - Body-plan layer ("canine" default; "primate" | "amphibian" | "feline" via lootbox/rebirth)
  * @returns Complete prompt string for image generation
  */
 export function buildHashBeastPrompt(
@@ -826,6 +844,7 @@ export function buildHashBeastPrompt(
   typeValue: number,
   traits: number[],
   breedValue: number = 0,
+  baseType: BaseTypeId = DEFAULT_BASE_TYPE,
 ): string {
   const resolved = resolveHashBeastTraits(
     factionId,
@@ -833,6 +852,7 @@ export function buildHashBeastPrompt(
     typeValue,
     traits,
     breedValue,
+    baseType,
   );
   return buildImagePrompt(resolved);
 }

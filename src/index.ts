@@ -11,3 +11,8 @@ export * as worldBible from "./world/bible.js";
 // PROGRESSION GRAMMAR — the canonical 8-stage ladder: transition ceremonies,
 // aura escalation, per-stage-band performance, named country × lane techniques.
 export * as worldProgression from "./world/progression.js";
+// BASE TYPES — the body-plan layer above breed ("forms are fluid"): canine
+// genesis default + lootbox/rebirth-gated primate, amphibian, feline forms
+// with silhouette language, movement grammar, voice timbre modifiers,
+// per-country skinning, and starter breed packs.
+export * as worldBaseTypes from "./world/baseTypes.js";

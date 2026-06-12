@@ -29,6 +29,7 @@ import { generateText } from "../service/llm.js";
 import { fetchAsBuffer } from "../utils/falMedia.js";
 import { logger } from "../utils/logger.js";
 import { countryBible } from "../world/bible.js";
+import { baseTypeMascotPhrase, safeBaseType } from "../world/baseTypes.js";
 import {
   evolutionCeremony,
   normalizeStage,
@@ -171,7 +172,7 @@ export function buildDialoguePrompt(
     state.push(`${nation} just moved from rank #${gs.rankBefore} to #${gs.rankAfter}`);
   }
   return [
-    `You are the in-game announcer/voice of a ${nation} HashBeast (a stylized dog-warrior mascot) in a comedic country-vs-country crypto mining war.`,
+    `You are the in-game announcer/voice of a ${nation} HashBeast (a stylized ${baseTypeMascotPhrase(safeBaseType(beast.baseType))}) in a comedic country-vs-country crypto mining war.`,
     `Write ONE short spoken line (max 14 words) the beast shouts at this moment: it ${moment}.`,
     p.archetype || p.tone
       ? `Its personality: ${[p.archetype, p.tone, p.motivation].filter(Boolean).join(", ")}.`
@@ -226,6 +227,7 @@ export async function writeAndVoiceFromPrompt(
         beast.breedValue ?? 0,
         beast.evolutionStage ?? 0,
         beast.breedName || "",
+        safeBaseType(beast.baseType),
       );
       if (ensured) {
         voiceId = ensured.voiceId;

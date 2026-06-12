@@ -37,4 +37,12 @@ export interface NftBeastInput {
   evolutionStage?: number;
   breedValue?: number;
   breedName?: string;
+  /**
+   * Body-plan layer above breed ("forms are fluid"): "canine" (genesis
+   * default) | "primate" | "amphibian" | "feline". Non-canine forms are
+   * granted only through the lootbox/rebirth path — the backend owns that
+   * gate and simply passes the beast's earned baseType in the snapshot.
+   * Invalid values fall back to canine (best-effort, never fails a job).
+   */
+  baseType?: string;
 }

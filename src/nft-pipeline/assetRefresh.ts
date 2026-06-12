@@ -22,6 +22,7 @@ import {
 } from "../utils/falMedia.js";
 import { logger } from "../utils/logger.js";
 import { FACTION_REGISTRY } from "../prompts/index.js";
+import { baseTypeRenderNoun, safeBaseType } from "../world/baseTypes.js";
 import { decodeDNA } from "./dna.js";
 import { BREED_BASE_BODIES, BASE_BODIES_DIR } from "./mintAssets.js";
 import type { NftBeastInput } from "./types.js";
@@ -114,7 +115,9 @@ export async function refreshVisualDp(
       aspectRatio: "1:1",
       resolution: "1K",
     });
-    const check = await validateSameCharacter(currentDp, newDp.url);
+    const check = await validateSameCharacter(currentDp, newDp.url, {
+      characterNoun: baseTypeRenderNoun(safeBaseType(beast.baseType)),
+    });
     if (!check.ok) {
       logger.warning(`asset-refresh: DP validation soft-fail (${check.reason}) — keeping new DP`);
     }
@@ -169,7 +172,13 @@ export async function refreshEvolutionAssets(
     FACTION_REGISTRY[faction]?.evolutionStages?.[level]?.name || `Stage ${level}`;
 
   try {
-    const baseBodyBuf = await getEvolutionBaseBodyBuffer(faction, breedValue, level);
+    // Evolution-level base bodies exist for the canine genesis layout only —
+    // non-canine base types evolve anchored purely on their own current art.
+    const baseType = safeBaseType(beast.baseType);
+    const baseBodyBuf =
+      baseType === "canine"
+        ? await getEvolutionBaseBodyBuffer(faction, breedValue, level)
+        : null;
     const [fullBodyBuf, dpBuf] = await Promise.all([
       fetchAsBuffer(currentFullBody),
       fetchAsBuffer(currentDp),
@@ -179,9 +188,13 @@ export async function refreshEvolutionAssets(
     refs.push({ buffer: fullBodyBuf, mime: "image/png" });
     refs.push({ buffer: dpBuf, mime: "image/png" });
 
+    const refGuide = baseBodyBuf
+      ? `THREE reference images are attached, in order: (1) the EVOLVED BASE BODY — use it ONLY for the new body form, silhouette, proportions, and intrinsic elemental features (wings/armor/aura/glowing eyes); (2) the character's CURRENT full body — this is the SOURCE OF TRUTH for identity: carry over the EXACT face, snout, eye shape/color, fur/coat colors and markings, breed, AND all gear/outfit/accessories/headwear; (3) the CURRENT display picture — match this face precisely.`
+      : `TWO reference images are attached, in order: (1) the character's CURRENT full body — this is the SOURCE OF TRUTH for identity: carry over the EXACT face, eye shape/color, colors and markings, breed, base type (an anthropomorphic ${baseTypeRenderNoun(baseType)} — never a dog unless it IS a dog), AND all gear/outfit/accessories/headwear; (2) the CURRENT display picture — match this face precisely.`;
+
     const fbPrompt = [
       `Render the NEW full-body sprite of THIS SAME character after EVOLVING to its "${stageName}" form. It must still be UNMISTAKABLY THE SAME individual — an upgrade of this exact character, NOT a different one.`,
-      `THREE reference images are attached, in order: (1) the EVOLVED BASE BODY — use it ONLY for the new body form, silhouette, proportions, and intrinsic elemental features (wings/armor/aura/glowing eyes); (2) the character's CURRENT full body — this is the SOURCE OF TRUTH for identity: carry over the EXACT face, snout, eye shape/color, fur/coat colors and markings, breed, AND all gear/outfit/accessories/headwear; (3) the CURRENT display picture — match this face precisely.`,
+      refGuide,
       `Preserve the character's vibe and recognizability: same coloring, same facial features, same outfit/gear style — only the body grows into the more powerful "${stageName}" form (bigger, stronger, with the evolved stage's elemental flourishes). A fan must instantly recognize it as the same beast leveled up.`,
       `Keep the pixel-art style of the references, upright bipedal standing pose, front-facing, centered, full body head to feet, plain muted gray-blue background. No text or watermarks.`,
     ].join("\n\n");

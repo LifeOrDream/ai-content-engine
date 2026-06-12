@@ -24,6 +24,11 @@ import {
   validateSameCharacter,
 } from "../utils/falMedia.js";
 import { countryBible, styleRung, type LocationCard } from "../world/bible.js";
+import {
+  baseTypeMascotPhrase,
+  baseTypeRenderNoun,
+  safeBaseType,
+} from "../world/baseTypes.js";
 import { beastMemoryPromptBlock, type BeastMemorySnapshot } from "./beastMemory.js";
 import { writeAndVoiceFromPrompt, type DialogueResult } from "./mutationContent.js";
 import type { NftBeastInput } from "./types.js";
@@ -82,8 +87,14 @@ export function buildMintIntroPanelPrompt(
   const rung = styleRung("arcade_cel");
   const nation = bible?.country || `Faction ${factionId}`;
   const colors = bible?.colors;
+  const baseType = safeBaseType(beast.baseType);
+  const baseTypeLine =
+    baseType === "canine"
+      ? ""
+      : `The character is an anthropomorphic ${baseTypeRenderNoun(baseType)} — keep it unmistakably that base type, never a dog.`;
   return [
-    `A single dramatic manga-style intro panel: THIS EXACT character (attached reference — keep its identity, breed, fur markings, colors, and gear lineage precisely) arriving for its first day of the mining war at ${location.name} — ${location.hook}`,
+    `A single dramatic manga-style intro panel: THIS EXACT character (attached reference — keep its identity, breed, markings, colors, and gear lineage precisely) arriving for its first day of the mining war at ${location.name} — ${location.hook}`,
+    baseTypeLine,
     `It stands at the threshold taking the place in: chest out, fresh-recruit energy, gear still spotless, eyes wide at the scale of the operation. One or two background silhouettes of veteran beasts at work, never competing for focus.`,
     colors
       ? `Palette discipline: ${nation} faction colors — primary ${colors.primary}, secondary ${colors.secondary}, accent ${colors.accent}, glow ${colors.glow}. National identity comes from costume style and palette only.`
@@ -105,7 +116,7 @@ export function buildMintIntroDialoguePrompt(
     countryBible(beast.factionId ?? 0)?.country || `Faction ${beast.factionId ?? 0}`;
   const p = beast.personality || {};
   return [
-    `You are the in-game announcer/voice of a ${nation} HashBeast (a stylized dog-warrior mascot) in a comedic country-vs-country crypto mining war.`,
+    `You are the in-game announcer/voice of a ${nation} HashBeast (a stylized ${baseTypeMascotPhrase(safeBaseType(beast.baseType))}) in a comedic country-vs-country crypto mining war.`,
     `Write ONE short spoken line (max 14 words) the beast shouts the moment it JOINS THE WAR — its very first day${location ? ` at ${location.name}` : ""}: fresh-recruit swagger covering rookie nerves, announcing itself to the whole front.`,
     p.archetype || p.tone
       ? `Its personality: ${[p.archetype, p.tone, p.motivation].filter(Boolean).join(", ")}.`
@@ -155,7 +166,9 @@ export async function generateMintIntro(
           aspectRatio: "16:9",
           resolution: "1K",
         });
-        const check = await validateSameCharacter(gateRef!, panel.url);
+        const check = await validateSameCharacter(gateRef!, panel.url, {
+          characterNoun: baseTypeRenderNoun(safeBaseType(beast.baseType)),
+        });
         if (!check.ok && attempt < MAX_PANEL_ATTEMPTS) {
           logger.warning(
             `mint_intro: identity gate failed (${check.reason}) — retrying panel`,

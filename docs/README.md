@@ -6,11 +6,12 @@ Start here if you are trying to understand or contribute to the open-source engi
 
 1. [Architecture](architecture.md)
 2. [NFT Asset Pipeline](nft-pipeline.md)
-3. [Media Proof and Evals](evals-and-media-proof.md)
-4. [World Packs](world-packs.md)
-5. [Provider Adapters](provider-adapters.md)
-6. [Trailer Pipeline](../trailer/README.md)
-7. [Contributing](../CONTRIBUTING.md)
+3. [Base Types](base-types.md)
+4. [Media Proof and Evals](evals-and-media-proof.md)
+5. [World Packs](world-packs.md)
+6. [Provider Adapters](provider-adapters.md)
+7. [Trailer Pipeline](../trailer/README.md)
+8. [Contributing](../CONTRIBUTING.md)
 
 ## Contributor Promise
 

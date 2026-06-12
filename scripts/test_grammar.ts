@@ -48,6 +48,20 @@ import {
 import { stateActionFor, type BeastProfile } from "../src/nft-pipeline/stateAnimations.js";
 import { dialogueSmells } from "../src/content-engine/dialogueQuality.js";
 import type { NftBeastInput } from "../src/nft-pipeline/types.js";
+import {
+  BASE_TYPE_IDS,
+  BASE_TYPES,
+  baseTypeCountrySkin,
+  baseTypeMascotPhrase,
+  baseTypeMotionDirective,
+  baseTypeRenderBlock,
+  getBreedForBaseType,
+  normalizeBaseType,
+  safeBaseType,
+} from "../src/world/baseTypes.js";
+import { buildHashBeastPrompt } from "../src/prompts/index.js";
+import { comparisonPrompt } from "../src/nft-pipeline/identity.js";
+import { buildVoiceDesignPrompt, voiceKeyFor } from "../src/nft-pipeline/voice.js";
 
 let failures = 0;
 let passes = 0;
@@ -69,7 +83,15 @@ function profileFor(stage: number, factionId = 0, isWizard = false): BeastProfil
     2: ["Russia", "russia"],
   };
   const [factionName, factionCode] = names[factionId] || ["USA", "usa"];
-  return { isWizard, occupation: "", factionId, factionName, factionCode, evolutionStage: stage };
+  return {
+    isWizard,
+    occupation: "",
+    factionId,
+    factionName,
+    factionCode,
+    evolutionStage: stage,
+    baseType: "canine",
+  };
 }
 
 const beast: NftBeastInput = {
@@ -253,6 +275,83 @@ check("arc suppressed for low-stage beasts", emotionalArcDirective(arc, 2) === "
 check("arc active for stage 5", emotionalArcDirective(arc, 5).includes(arc));
 check("arc lands frame-by-frame", emotionalArcDirective(arc, 7).includes("final frame lands it"));
 
+// ─── Phase E · base-type layer ───────────────────────────────────────────────
+console.log("\nE · base types");
+check("4 base types registered", BASE_TYPE_IDS.length === 4);
+check("canine render block is empty (genesis prompts untouched)", baseTypeRenderBlock("canine", 0) === "");
+check("canine motion directive is empty", baseTypeMotionDirective("canine") === "");
+const traitsE = [2, 3, 4, 3, 2, 4, 1];
+check(
+  "canine mint prompt byte-identical with/without explicit baseType",
+  buildHashBeastPrompt(0, 2, 1, traitsE, 1) === buildHashBeastPrompt(0, 2, 1, traitsE, 1, "canine"),
+);
+const brPrimate = buildHashBeastPrompt(10, 2, 1, traitsE, 0, "primate");
+const jpPrimate = buildHashBeastPrompt(4, 2, 1, traitsE, 0, "primate");
+check("primate prompt declares the base type", /NOT a dog/.test(brPrimate));
+check(
+  "Brazil primate != Japan primate (country skin modulates the base type)",
+  baseTypeCountrySkin("primate", 10) !== baseTypeCountrySkin("primate", 4) && brPrimate !== jpPrimate,
+);
+check(
+  "feline prompt carries cat-ninja movement grammar",
+  /pounce/i.test(buildHashBeastPrompt(4, 2, 1, traitsE, 0, "feline")),
+);
+check(
+  "amphibian prompt remaps fur traits to skin",
+  /skin tone and pattern/i.test(buildHashBeastPrompt(10, 2, 1, traitsE, 1, "amphibian")),
+);
+check(
+  "every base type has 12 country skins (or legacy canine grammar)",
+  BASE_TYPE_IDS.every((id) => id === "canine" || Object.keys(BASE_TYPES[id].countrySkins).length === 12),
+);
+check(
+  "starter breed packs: 4 breeds per non-canine base type",
+  BASE_TYPE_IDS.every((id) => id === "canine" || BASE_TYPES[id].breeds?.length === 4),
+);
+check(
+  "canine breed routing unchanged (USA breed 1 = Husky)",
+  getBreedForBaseType("canine", 0, 1).name === "Husky",
+);
+check(
+  "primate breed pack indexes by DNA breed bits",
+  getBreedForBaseType("primate", 0, 3).name === "Gorilla",
+);
+check("normalizeBaseType defaults empty → canine", normalizeBaseType("") === "canine");
+let threw = false;
+try {
+  normalizeBaseType("dragon");
+} catch {
+  threw = true;
+}
+check("normalizeBaseType throws on unknown base type", threw);
+check("safeBaseType never throws (junk → canine)", safeBaseType("dragon") === "canine");
+check(
+  "identity gate full_body prompt is base-type aware",
+  /reads as a cat/.test(comparisonPrompt("full_body", "feline")) &&
+    /answer NO/.test(comparisonPrompt("dp", "primate")),
+);
+check("canine voice keys keep the legacy format", voiceKeyFor(0, 1, 2) === "0:1:0");
+check("non-canine voice keys get their own keyspace", voiceKeyFor(0, 1, 2, "feline") === "feline:0:1:0");
+check(
+  "voice design prompt swaps the mascot phrase + timbre",
+  buildVoiceDesignPrompt(0, "Tree Frog", 0, "amphibian").includes(baseTypeMascotPhrase("amphibian")) &&
+    /croak|ribbit/i.test(buildVoiceDesignPrompt(0, "Tree Frog", 0, "amphibian")),
+);
+check(
+  "announcer dialogue prompt follows the beast's base type",
+  buildDialoguePrompt(
+    { ...beast, baseType: "feline" },
+    "power",
+    {},
+  ).includes("cat-ninja mascot"),
+);
+check(
+  "no flag-print language in any base-type skin",
+  BASE_TYPE_IDS.every((id) =>
+    Object.values(BASE_TYPES[id].countrySkins).every((s) => !/flag[- ]print|flag fabric|flag cape/i.test(s)),
+  ),
+);
+
 // ─── Banned-lexicon sweep over every static grammar string ───────────────────
 console.log("\nLint · banned lexicon sweep");
 const corpus: Array<[string, string]> = [
@@ -268,6 +367,19 @@ const corpus: Array<[string, string]> = [
   ["ceremony stage-5", evoTo5],
   ["state pup mining", pupMine],
   ["state ascended win", godWin],
+  // Phase E: every base-type grammar string stays lexicon-clean too.
+  ...BASE_TYPE_IDS.flatMap((id): Array<[string, string]> => [
+    [
+      `basetype ${id} grammar`,
+      `${BASE_TYPES[id].silhouetteLanguage} ${BASE_TYPES[id].movementGrammar} ${BASE_TYPES[id].voiceTimbreModifier}`,
+    ],
+    ...Object.entries(BASE_TYPES[id].countrySkins).map(
+      ([fid, skin]): [string, string] => [`basetype ${id} skin ${fid}`, skin],
+    ),
+    ...(BASE_TYPES[id].breeds || []).map(
+      (b): [string, string] => [`basetype ${id} breed ${b.name}`, `${b.description} ${b.bodyPrompt}`],
+    ),
+  ]),
 ];
 let lexiconClean = true;
 for (const [label, text] of corpus) {

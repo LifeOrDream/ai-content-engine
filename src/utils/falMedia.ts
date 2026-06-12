@@ -517,10 +517,15 @@ export async function uploadBufferToS3(
  * Validate that a generated frame still depicts the same character as the
  * reference. Best-effort: returns true on any error or inconclusive response
  * (we don't want to hard-block content on a flaky validator).
+ *
+ * `characterNoun` makes the gate base-type aware ("dog", "primate (monkey/
+ * ape)", "frog-like amphibian", "cat") — callers resolve it from the beast's
+ * baseType (src/world/baseTypes.ts). Omitted → legacy generic wording.
  */
 export async function validateSameCharacter(
   referenceImageUrl: string,
   candidateImageUrl: string,
+  opts: { characterNoun?: string } = {},
 ): Promise<{ ok: boolean; reason: string }> {
   const client = getGenAI();
   if (!client) return { ok: true, reason: "validator disabled (no GEMINI_KEY)" };
@@ -534,10 +539,13 @@ export async function validateSameCharacter(
       const mime = meta.slice(5).split(";")[0] || "image/png";
       return { inlineData: { mimeType: mime, data: b64 } };
     };
+    const subject = opts.characterNoun
+      ? `IMAGE 1 is a hashbeast character (an anthropomorphic ${opts.characterNoun}).`
+      : `IMAGE 1 is a hashbeast character.`;
     const response = await client.models.generateContent({
       model: GEMINI_VISION_MODEL,
       contents: createUserContent([
-        `IMAGE 1 is a hashbeast character. IMAGE 2 should be the SAME character after a small cosmetic change (a trait was tweaked). Is IMAGE 2 clearly the same character in the same pixel-art style, not a broken/garbled image? Respond ONLY YES or NO.`,
+        `${subject} IMAGE 2 should be the SAME character after a small cosmetic change (a trait was tweaked). Is IMAGE 2 clearly the same character — the same kind of creature — in the same pixel-art style, not a broken/garbled image? Respond ONLY YES or NO.`,
         toInline(ref),
         toInline(cand),
       ]),

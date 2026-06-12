@@ -36,6 +36,13 @@ import {
   resolveHashBeastTraits,
 } from "../prompts/index.js";
 import { countryBible, FACTION_CINEMATIC_ENVIRONMENTS } from "../world/bible.js";
+import {
+  baseTypeBaseBodyPath,
+  baseTypeRenderNoun,
+  normalizeBaseType,
+  DEFAULT_BASE_TYPE,
+  type BaseTypeId,
+} from "../world/baseTypes.js";
 import { decodeDNA } from "./dna.js";
 import { compareImageWithReference, type ValidationResult } from "./identity.js";
 import {
@@ -190,6 +197,7 @@ export function getStoragePath(
 export function buildFullBodyPrompt(
   decodedTraits: DecodedTraits,
   hashbeastNumber: string,
+  baseType: BaseTypeId = DEFAULT_BASE_TYPE,
 ): string {
   const hashbeastPrompt = buildHashBeastPrompt(
     decodedTraits.factionId,
@@ -197,6 +205,7 @@ export function buildFullBodyPrompt(
     decodedTraits.type,
     decodedTraits.traits,
     decodedTraits.breedValue,
+    baseType,
   );
 
   return `REFERENCE IMAGE PROVIDED: The attached reference image shows a pup hashbeast base body. Use this as a STYLE REFERENCE for:
@@ -231,7 +240,15 @@ REQUIREMENTS:
 - No text, watermarks, or overlays`;
 }
 
-const CINEMATIC_STYLE_PREFIX = `Semi-realistic 3D rendered character portrait, Pixar and DreamWorks animation quality, cinematic movie still aesthetic. The character is an anthropomorphic bipedal hashbeast (dog) with detailed realistic fur textures, expressive eyes with light reflections, and physically-based material rendering on all clothing and accessories. Dramatic cinematic lighting with rim lights and volumetric atmosphere. Shallow depth of field with bokeh background. Professional composition suitable for a movie poster or game cinematic cutscene. The character should feel like it belongs in a high-budget animated film — NOT pixel art, NOT cartoon, NOT flat illustration. Think Zootopia meets military thriller.`;
+/** Cinematic style prefix — base-type aware (the noun follows the body plan). */
+function cinematicStylePrefix(baseType: BaseTypeId): string {
+  const noun = baseTypeRenderNoun(baseType);
+  const surface =
+    baseType === "amphibian"
+      ? "detailed realistic skin textures"
+      : "detailed realistic fur textures";
+  return `Semi-realistic 3D rendered character portrait, Pixar and DreamWorks animation quality, cinematic movie still aesthetic. The character is an anthropomorphic bipedal hashbeast (${noun}) with ${surface}, expressive eyes with light reflections, and physically-based material rendering on all clothing and accessories. Dramatic cinematic lighting with rim lights and volumetric atmosphere. Shallow depth of field with bokeh background. Professional composition suitable for a movie poster or game cinematic cutscene. The character should feel like it belongs in a high-budget animated film — NOT pixel art, NOT cartoon, NOT flat illustration. Think Zootopia meets military thriller.`;
+}
 
 // Cinematic-portrait environments are single-sourced from the world bible
 // (rung 3 of the style elevation ladder): FACTION_CINEMATIC_ENVIRONMENTS.
@@ -240,7 +257,10 @@ const CINEMATIC_STYLE_PREFIX = `Semi-realistic 3D rendered character portrait, P
  * Cinematic PFP portrait prompt (optional asset; production currently ships
  * full_body + dp only — keep this behind `includeCinematic`).
  */
-export function buildCinematicPrompt(decodedTraits: DecodedTraits): string {
+export function buildCinematicPrompt(
+  decodedTraits: DecodedTraits,
+  baseType: BaseTypeId = DEFAULT_BASE_TYPE,
+): string {
   const { factionId, evolutionStage, traits, breedValue } = decodedTraits;
   const resolved = resolveHashBeastTraits(
     factionId,
@@ -248,6 +268,7 @@ export function buildCinematicPrompt(decodedTraits: DecodedTraits): string {
     decodedTraits.type ?? 0,
     traits,
     breedValue,
+    baseType,
   );
   const factionEnv =
     FACTION_CINEMATIC_ENVIRONMENTS[factionId] || FACTION_CINEMATIC_ENVIRONMENTS[0];
@@ -270,11 +291,11 @@ export function buildCinematicPrompt(decodedTraits: DecodedTraits): string {
   if (resolved.traits.accessory?.prompt) traitLines.push(`Accessory: ${resolved.traits.accessory.prompt}`);
   if (resolved.traits.expression?.prompt) traitLines.push(`Expression: ${resolved.traits.expression.prompt}`);
 
-  return `${CINEMATIC_STYLE_PREFIX}
+  return `${cinematicStylePrefix(baseType)}
 
 Using the attached full body image as the SAME-CHARACTER reference, render a cinematic PFP-style portrait (profile picture / avatar framing).
 
-CHARACTER: An anthropomorphic bipedal ${breed.name} dog — ${breed.bodyPrompt}. The face is the focal point.
+CHARACTER: An anthropomorphic bipedal ${breed.name} ${baseTypeRenderNoun(baseType)} — ${breed.bodyPrompt}. The face is the focal point.
 
 FACTION: ${faction.name}
 Role: ${type.occupation} (${type.isWizard ? "Wizard — magical elements in design" : "Muggle — practical tactical design"})
@@ -301,16 +322,23 @@ QUALITY: 4K cinematic render, movie poster quality, Unreal Engine 5 level of det
  * 1. explicit `referenceImageUrl` from the job,
  * 2. local HASHBEAST_BASE_BODIES_DIR/<breed file>,
  * 3. remote HASHBEAST_BASE_BODIES_BASE_URL/<breed file>.
+ *
+ * Non-canine base types resolve `basetypes/<baseType>/<breed file>` under the
+ * same dir/URL roots (the canine layout is untouched).
  */
 export async function resolveReferenceImage(
   factionId: number,
   breedValue: number,
   referenceImageUrl?: string,
+  baseType: BaseTypeId = DEFAULT_BASE_TYPE,
 ): Promise<{ buffer: Buffer; source: string }> {
   if (referenceImageUrl) {
     return { buffer: await fetchAsBuffer(referenceImageUrl), source: referenceImageUrl };
   }
-  const filename = BREED_BASE_BODIES[factionId]?.[breedValue % 4];
+  const filename =
+    baseType === "canine"
+      ? BREED_BASE_BODIES[factionId]?.[breedValue % 4]
+      : baseTypeBaseBodyPath(baseType, breedValue);
   if (filename && BASE_BODIES_DIR) {
     const fullPath = path.join(BASE_BODIES_DIR, filename);
     try {
@@ -351,6 +379,15 @@ export interface NftMintAssetsInput {
   referenceImageUrl?: string;
   /** Also render the cinematic PFP portrait (non-blocking; default false). */
   includeCinematic?: boolean;
+  /**
+   * Body-plan layer above breed ("forms are fluid"). Defaults to "canine"
+   * (the genesis form). Non-canine values ("primate" | "amphibian" |
+   * "feline") are only legitimate for beasts that earned them through the
+   * lootbox/rebirth path — the BACKEND enforces that gate before dispatch;
+   * the engine validates against the deployment allowlist
+   * (HASHBEAST_BASE_TYPE_ALLOWLIST) and throws on anything else.
+   */
+  baseType?: string;
 }
 
 export interface MintValidationSummary {
@@ -428,6 +465,9 @@ export async function generateMintAssets(
   const progress: NftProgressFn = opts.onProgress || (() => undefined);
   const hashbeastNumber = input.mint.substring(0, 8);
 
+  // 0. Validate the base type (strict: unknown/non-allowlisted values throw).
+  const baseType = normalizeBaseType(input.baseType);
+
   // 1. Decode DNA + storage path.
   const decodedTraits = decodeMintTraits(input.dna);
   const storagePath = getStoragePath(
@@ -444,20 +484,26 @@ export async function generateMintAssets(
     decodedTraits.factionId,
     decodedTraits.breedValue,
     input.referenceImageUrl,
+    baseType,
   );
   logger.info(
-    `Mint ${hashbeastNumber}…: reference=${path.basename(reference.source)} (faction=${decodedTraits.factionId}, breed=${decodedTraits.breedValue})`,
+    `Mint ${hashbeastNumber}…: reference=${path.basename(reference.source)} (faction=${decodedTraits.factionId}, breed=${decodedTraits.breedValue}, baseType=${baseType})`,
   );
 
   // 3. Full body — generate, identity-gate vs the reference, bounded retries.
-  const fullBodyPrompt = buildFullBodyPrompt(decodedTraits, hashbeastNumber);
+  const fullBodyPrompt = buildFullBodyPrompt(decodedTraits, hashbeastNumber, baseType);
   const fullBody = await generateWithValidation(
     "Full body",
     fullBodyPrompt,
     [{ buffer: reference.buffer }],
     { aspectRatio: FULL_BODY_ASPECT_RATIO, resolution: FULL_BODY_RESOLUTION },
     (media) =>
-      compareImageWithReference({ buffer: reference.buffer }, { url: media.url }, "full_body"),
+      compareImageWithReference(
+        { buffer: reference.buffer },
+        { url: media.url },
+        "full_body",
+        baseType,
+      ),
     (attempt) =>
       progress({
         step: "generating_full_body",
@@ -492,6 +538,7 @@ export async function generateMintAssets(
         { buffer: fullBody.media.buffer },
         { url: media.url },
         "dp",
+        baseType,
       ),
     (attempt) =>
       progress({
@@ -517,7 +564,7 @@ export async function generateMintAssets(
   if (input.includeCinematic) {
     await progress({ step: "generating_cinematic", percent: 88, message: "Rendering cinematic..." });
     try {
-      cinematicPrompt = buildCinematicPrompt(decodedTraits);
+      cinematicPrompt = buildCinematicPrompt(decodedTraits, baseType);
       const cinematic = await generateImageEditFromBuffers(
         cinematicPrompt,
         [{ buffer: fullBody.media.buffer }],
