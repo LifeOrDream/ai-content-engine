@@ -10,6 +10,7 @@ import {
   pickTrope,
   scoreBeat,
 } from "../src/content-engine/index.js";
+import { bibleLeader } from "../src/world/bible.js";
 
 function excerpt(text: string, max = 360): string {
   return text.length <= max ? text : `${text.slice(0, max).trim()}...`;
@@ -41,7 +42,7 @@ const sceneScriptPrompt = buildSceneScriptPrompt({
   arcPhase: arc,
   trope,
   cliffhanger: grounding.series.lastCliffhanger,
-  characterLine: "Commander Rex, USA Golden Retriever Super Commander",
+  characterLine: `${bibleLeader(0)!.name}, USA Golden Retriever Super Commander`,
   protagonistCanonBlock: characterCanon,
   plotDirectives:
     "The 4:20 countdown has appeared under Wall Street. Rex must realize this is not a normal market panic.",

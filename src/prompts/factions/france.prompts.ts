@@ -22,44 +22,15 @@
 // FACTION IDENTITY
 // =============================================================================
 
-export const FRANCE_FACTION = {
-  id: 9,
-  name: "France",
-  code: "france",
+import { legacyFactionBlock } from "../../world/bible.js";
 
-  colors: {
-    primary: "#002395", // French Blue
-    secondary: "#FFFFFF", // White
-    accent: "#ED2939", // French Red
-    faction_glow: "#FFD700", // Gold (Versailles luxury)
-  },
-
-  visual_identity: `French elegant aesthetic, bleu blanc rouge tricolor,
-fleur-de-lis motifs, haute couture sophistication, cafe culture,
-Parisian architecture, revolutionary symbolism, wine and cheese refinement`,
-
-  faction_lore: {
-    origin: `The French HashBeast Network traces its lineage to the royal dogs of Versailles.
-When Louis XIV declared "L'etat, c'est moi," his hashbeast whispered "Non, c'est nous."
-The French Revolution? Orchestrated by hashbeast republicans tired of aristocratic hashbeast
-excess. Napoleon's conquests spread French hashbeast influence across Europe.`,
-    mining_strategy: `Cultural authority, luxury industry control, European Union
-influence, nuclear capability, philosophical agenda-setting. France runs the network's
-aesthetic operations and coordinates Mining Wars strategy across Europe.`,
-  },
-
-  leader: {
-    name: "Comte Louis de Woofbourg",
-    title: "Grand Sommelier of the European Network",
-    personality:
-      "Insufferably sophisticated, speaks in wine metaphors, revolutionary when bored",
-    catchphrases: [
-      "This $degenBTC has notes of revolution with a finish of world domination. Magnifique.",
-      "The Americans have money. We have taste. Taste always wins in the Mining Wars.",
-      "Liberte, egalite, $degenBTC-ite!",
-    ],
-  },
-};
+/**
+ * Faction identity — leader name, title, catchphrases, lore, palette, and
+ * visual identity — comes from the WORLD BIBLE (src/world/bible.ts), the
+ * single source of truth. This file defines ONLY the faction-specific NFT
+ * trait grammar (types, traits, evolution stages, stories).
+ */
+export const FRANCE_FACTION = legacyFactionBlock(9);
 
 // =============================================================================
 // TYPE PROMPTS (16 Types: 0-7 Wizard, 8-15 Muggle)

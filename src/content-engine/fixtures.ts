@@ -1,4 +1,7 @@
 import type { HashBeastLike, StoryGrounding, VideoFormat } from "./types.js";
+import { bibleLeader } from "../world/bible.js";
+
+const USA_LEADER = bibleLeader(0)!;
 
 export const fakeReelFormat: VideoFormat = {
   id: "fixture-reel",
@@ -76,8 +79,8 @@ export function buildFakeStoryGrounding(): StoryGrounding {
         factionId: 0,
         factionName: "USA",
         factionCode: "usa",
-        leaderName: "Commander Rex",
-        leaderCatchphrase: "Nobody prints panic on my watch.",
+        leaderName: USA_LEADER.name,
+        leaderCatchphrase: USA_LEADER.catchphrases[0],
         isWizard: false,
         occupation: "Federal Reserve War-Room Commander",
         region: "New York command vault",

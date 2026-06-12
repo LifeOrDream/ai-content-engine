@@ -22,7 +22,7 @@
 import { generateText } from "../service/llm.js";
 import { fetchAsBuffer } from "../utils/falMedia.js";
 import { logger } from "../utils/logger.js";
-import { FACTION_REGISTRY } from "../prompts/index.js";
+import { countryBible } from "../world/bible.js";
 import type { NftBeastInput } from "./types.js";
 import {
   generateStrip,
@@ -82,7 +82,7 @@ export interface GameStateCtx {
 }
 
 function factionName(factionId: number): string {
-  return FACTION_REGISTRY[factionId]?.faction?.name || `Faction ${factionId}`;
+  return countryBible(factionId)?.country || `Faction ${factionId}`;
 }
 
 export function buildDialoguePrompt(

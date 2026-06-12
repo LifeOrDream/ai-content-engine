@@ -13,45 +13,15 @@
 // FACTION IDENTITY
 // =============================================================================
 
-export const UK_FACTION = {
-  id: 7,
-  name: "UK",
-  code: "uk",
+import { legacyFactionBlock } from "../../world/bible.js";
 
-  colors: {
-    primary: "#012169",
-    secondary: "#C8102E",
-    accent: "#FFFFFF",
-    faction_glow: "#FFD700",
-  },
-
-  visual_identity: `British regal aesthetic, Union Jack motifs, Victorian architecture,
-London fog atmosphere, royal insignia, Big Ben and Parliament, tweed and brass,
-proper stiff-upper-lip elegance, MI6 spy sophistication`,
-
-  faction_lore: {
-    origin: `The British HashBeast Network was formalised in 1066 when William the Conqueror's
-war-hound seized the Magical Crown alongside the mortal one. For a thousand years,
-corgis have secretly ruled from Buckingham Palace. The "British Empire" was built to
-establish $degenBTC mining colonies worldwide. Decolonisation was just offshoring — the
-network kept every node.`,
-    mining_strategy: `Financial sorcery through the City of London — the oldest financial
-centre on Earth. Five Eyes intelligence feeds mining algorithms. The Commonwealth is
-a distributed mining pool spanning 56 nations. Tea breaks are synchronised network
-checkpoints. The British invented queuing — and blockchain is just a queue.`,
-  },
-
-  leader: {
-    name: "Sir Barkington the Third",
-    title: "Lord Chancellor of the Royal HashBeast Privy Council",
-    personality:
-      "Impeccably polite, devastatingly sarcastic, underestimates nothing, tea obsessed",
-    catchphrases: [
-      "Keep calm and mine $degenBTC.",
-      "The Empire strikes back — with compound interest.",
-    ],
-  },
-};
+/**
+ * Faction identity — leader name, title, catchphrases, lore, palette, and
+ * visual identity — comes from the WORLD BIBLE (src/world/bible.ts), the
+ * single source of truth. This file defines ONLY the faction-specific NFT
+ * trait grammar (types, traits, evolution stages, stories).
+ */
+export const UK_FACTION = legacyFactionBlock(7);
 
 // =============================================================================
 // TYPE PROMPTS (16 Types: 0-7 Wizard, 8-15 Muggle)

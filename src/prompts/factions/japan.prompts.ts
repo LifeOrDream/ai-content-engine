@@ -22,41 +22,15 @@
 // FACTION IDENTITY
 // =============================================================================
 
-export const JAPAN_FACTION = {
-  id: 4,
-  name: "Japan",
-  code: "japan",
+import { legacyFactionBlock } from "../../world/bible.js";
 
-  colors: {
-    primary: "#BC002D",
-    secondary: "#FFFFFF",
-    accent: "#000000",
-    faction_glow: "#FFB7C5",
-  },
-
-  visual_identity: `Japanese aesthetic fusion of traditional and hyper-modern,
-cherry blossom motifs, samurai and ninja elements, anime-inspired styling,
-clean minimalist design mixed with neon cyberpunk, shrine and temple influences`,
-
-  faction_lore: {
-    origin: `The Japanese HashBeast Network descends from the legendary komainu - the
-guardian dog-lions of Shinto shrines. When $degenBTC emerged, Japanese hashbeasts recognized
-it immediately: the prophecy of the thousand-year token.`,
-    mining_strategy: `Technological innovation, cultural soft power, gaming industry
-dominance, robotics automation. Japan hosts the most sophisticated automated $degenBTC
-mining operations in the world.`,
-  },
-
-  leader: {
-    name: "Shogun Hachiko IX",
-    title: "Eternal Guardian of the Rising Sun Mining Syndicate",
-    personality: "Honorable, precise, speaks in haiku when emotional",
-    catchphrases: [
-      "The nail that stands / Shall hammer other nails / Such is $degenBTC.",
-      "In the way of the hashbeast, there is no second place in the Mining Wars.",
-    ],
-  },
-};
+/**
+ * Faction identity — leader name, title, catchphrases, lore, palette, and
+ * visual identity — comes from the WORLD BIBLE (src/world/bible.ts), the
+ * single source of truth. This file defines ONLY the faction-specific NFT
+ * trait grammar (types, traits, evolution stages, stories).
+ */
+export const JAPAN_FACTION = legacyFactionBlock(4);
 
 // =============================================================================
 // TYPE PROMPTS (16 Types: 0-7 Wizard, 8-15 Muggle)

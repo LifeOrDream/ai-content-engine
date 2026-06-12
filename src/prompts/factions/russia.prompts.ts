@@ -22,45 +22,15 @@
 // FACTION IDENTITY
 // =============================================================================
 
-export const RUSSIA_FACTION = {
-  id: 2,
-  name: "Russia",
-  code: "russia",
+import { legacyFactionBlock } from "../../world/bible.js";
 
-  colors: {
-    primary: "#D52B1E", // Russian Red
-    secondary: "#0039A6", // Russian Blue
-    accent: "#FFFFFF", // White
-    faction_glow: "#8B4513", // Siberian brown/amber
-  },
-
-  visual_identity: `Russian imperial and Soviet fusion aesthetics, red white and blue,
-double-headed eagle motifs, ushanka and military styling, Orthodox religious elements,
-cold weather gear, brutalist architecture hints, vodka culture references`,
-
-  faction_lore: {
-    origin: `The Russian HashBeast Network traces its lineage to the dire wolves that guarded
-the first Slavic tribes. When Voldemort's loyal hashbeast created $degenBTC, the Russian
-network recognized the mathematics of power - something they'd practiced since the Tsars.
-The Soviet experiment was actually a test run for centralized coordination. When it
-"fell," the network went deeper underground, emerging as oligarchs and intelligence ops.`,
-    mining_strategy: `Natural resources (oil, gas, minerals), nuclear capability,
-cyber warfare expertise, geographic buffer between East and West, intelligence
-networks. Russia hosts underground $degenBTC mining operations in Siberian bunkers.`,
-  },
-
-  leader: {
-    name: "Marshal Viktor Volkov",
-    title: "Supreme Commissar of the Eastern HashBeast Territories",
-    personality:
-      "Cold, calculating, speaks rarely but lethally, chess grandmaster mentality",
-    catchphrases: [
-      "In Russia, $degenBTC mines you.",
-      "The patient wolf eats the eager bear.",
-      "There are no accidents, only opportunities not yet exploited.",
-    ],
-  },
-};
+/**
+ * Faction identity — leader name, title, catchphrases, lore, palette, and
+ * visual identity — comes from the WORLD BIBLE (src/world/bible.ts), the
+ * single source of truth. This file defines ONLY the faction-specific NFT
+ * trait grammar (types, traits, evolution stages, stories).
+ */
+export const RUSSIA_FACTION = legacyFactionBlock(2);
 
 // =============================================================================
 // TYPE PROMPTS (16 Types: 0-7 Wizard, 8-15 Muggle)

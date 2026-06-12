@@ -13,7 +13,7 @@
  * design-then-immediately-synthesize, which this module does).
  */
 import { designVoice, generateSpeech, FAL_MEDIA_CONFIG } from "../utils/falMedia.js";
-import { FACTION_REGISTRY } from "../prompts/index.js";
+import { countryBible, FACTION_VOICE_HINTS, bibleLeader } from "../world/bible.js";
 import { logger } from "../utils/logger.js";
 
 export interface VoiceProfile {
@@ -79,28 +79,9 @@ export function voiceKeyFor(factionId: number, breedValue: number, level: number
   return `${factionId}:${breedValue % 4}:${stageBand(level)}`;
 }
 
-/** Per-country accent / vocal character for the voice-design description. */
-interface FactionVoiceHint {
-  accent: string;
-  timbre: string;
-}
-const FACTION_VOICE_HINTS: Record<string, FactionVoiceHint> = {
-  usa: { accent: "bold American English accent", timbre: "brash, swaggering, hype-man energy" },
-  uk: { accent: "posh British English accent", timbre: "dry, witty, theatrically composed" },
-  russia: { accent: "deep Russian accent", timbre: "stoic, gravelly, menacing bravado" },
-  india: { accent: "Indian English accent", timbre: "fast, clever, proud and animated" },
-  japan: { accent: "Japanese accent", timbre: "disciplined, intense, samurai honor" },
-  southkorea: { accent: "Korean accent", timbre: "slick, idol-bright, K-pop charisma" },
-  iran: { accent: "Persian accent", timbre: "regal, poetic, simmering defiance" },
-  northkorea: { accent: "stern Korean accent", timbre: "rigid, grandiose, propaganda-bombastic" },
-  france: { accent: "French accent", timbre: "suave, haughty, effortlessly cool" },
-  brazil: { accent: "Brazilian Portuguese accent", timbre: "warm, rhythmic, carnival-loud" },
-  israel: { accent: "Israeli accent", timbre: "sharp, blunt, street-smart grit" },
-  china: { accent: "Mandarin Chinese accent", timbre: "imperial, calm, wuxia-master gravitas" },
-};
-
+// Per-country accent / vocal character — single-sourced from the world bible.
 function factionCode(factionId: number): string {
-  return FACTION_REGISTRY[factionId]?.faction?.code?.toLowerCase() || "usa";
+  return countryBible(factionId)?.code || "usa";
 }
 
 export function buildVoiceDesignPrompt(
@@ -110,7 +91,7 @@ export function buildVoiceDesignPrompt(
 ): string {
   const code = factionCode(factionId);
   const hint = FACTION_VOICE_HINTS[code] || FACTION_VOICE_HINTS.usa;
-  const factionName = FACTION_REGISTRY[factionId]?.faction?.name || code;
+  const factionName = countryBible(factionId)?.country || code;
   const bandTone = BAND_TONE[band] || BAND_TONE[BAND_TONE.length - 1] || "";
   return [
     `Voice for an animated cartoon ${breedName} dog-warrior mascot representing ${factionName} in a high-energy country-vs-country battle game.`,
@@ -147,7 +128,7 @@ export async function ensureVoiceId(
 
     const band = stageBand(level);
     const description = buildVoiceDesignPrompt(factionId, breedName, band);
-    const preview = FACTION_REGISTRY[factionId]?.faction?.leader?.catchphrases?.[0];
+    const preview = bibleLeader(factionId)?.catchphrases?.[0];
     const { voiceId, previewUrl } = await designVoice(
       description,
       preview || "For glory and country — let's go!",

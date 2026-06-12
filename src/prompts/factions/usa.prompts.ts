@@ -22,42 +22,15 @@
 // FACTION IDENTITY
 // =============================================================================
 
-export const USA_FACTION = {
-  id: 0,
-  name: "USA",
-  code: "usa",
+import { legacyFactionBlock } from "../../world/bible.js";
 
-  colors: {
-    primary: "#B22234",
-    secondary: "#3C3B6E",
-    accent: "#FFFFFF",
-    faction_glow: "#FFD700",
-  },
-
-  visual_identity: `American patriotic aesthetic, red white and blue color scheme,
-stars and stripes motifs, bald eagle symbolism, confident American swagger,
-military precision mixed with tech innovation, Wall Street power vibes`,
-
-  faction_lore: {
-    origin: `The American HashBeast Network was established in 1776. Benjamin Franklin's hashbeast
-was the first Grand Woofmaster. Today, the network controls both political parties,
-all major tech companies, and has a paw in every significant American institution.`,
-    mining_strategy: `Military might, technological innovation, cultural influence,
-financial markets, media control. The USA faction hosts most $degenBTC mining operations
-and exchange liquidity. When America mines, the world watches.`,
-  },
-
-  leader: {
-    name: "General George Woofington III",
-    title: "Supreme Commander of the American HashBeast Forces",
-    personality:
-      "Patriotic, loud, freedom-obsessed, believes USA should lead the Mining Wars",
-    catchphrases: [
-      "In $degenBTC we trust!",
-      "Freedom isn't free - it's mined!",
-    ],
-  },
-};
+/**
+ * Faction identity — leader name, title, catchphrases, lore, palette, and
+ * visual identity — comes from the WORLD BIBLE (src/world/bible.ts), the
+ * single source of truth. This file defines ONLY the faction-specific NFT
+ * trait grammar (types, traits, evolution stages, stories).
+ */
+export const USA_FACTION = legacyFactionBlock(0);
 
 // =============================================================================
 // TYPE PROMPTS (16 Types: 0-7 Wizard, 8-15 Muggle)

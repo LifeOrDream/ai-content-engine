@@ -17,11 +17,19 @@ MineBTC is the reference world, but the engine should support other game worlds 
 
 MineBTC's world is a country-vs-country mining war where HashBeasts are dog-warrior characters whose appearance, power, and story evolve through gameplay.
 
+**Canon source of truth: `src/world/bible.ts`** (human-readable companion with
+the name-conflict decision log: `WORLD_BIBLE.md` at the repo root). All leader
+names, lieutenant rosters, lore, palettes, voice hints, mining tools, location
+cards, rivalries, and the style elevation ladder live there; every prompt
+builder imports from it instead of defining its own copies.
+
 Reference files:
 
+- `src/world/bible.ts` — the world bible (single import point)
+- `WORLD_BIBLE.md` — decision log + rivalry map + style ladder rules
 - `trailer/blueprints/00-series-bible.md`
-- `trailer/world/countryCastRegistry.ts`
-- `trailer/world/locationRegistry.ts`
+- `trailer/world/countryCastRegistry.ts` — thin re-export of the bible's cast
+- `trailer/world/locationRegistry.ts` — deep shot-level location art direction
 - `trailer/world/storyMemory.ts`
 - `src/content-engine/fixtures.ts`
 

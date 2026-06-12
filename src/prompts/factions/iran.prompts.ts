@@ -17,45 +17,15 @@
 // FACTION IDENTITY
 // =============================================================================
 
-export const IRAN_FACTION = {
-  id: 6,
-  name: "Iran",
-  code: "iran",
+import { legacyFactionBlock } from "../../world/bible.js";
 
-  colors: {
-    primary: "#239F40",
-    secondary: "#DA0000",
-    accent: "#FFFFFF",
-    faction_glow: "#FFD700",
-  },
-
-  visual_identity: `Persian aesthetic, Islamic geometric patterns, turquoise and gold mosaics,
-desert and mountain landscapes, revolutionary imagery, ancient Persepolis columns,
-Safavid architecture, calligraphic art, Persian miniature painting style`,
-
-  faction_lore: {
-    origin: `The Persian HashBeast Network predates all others. When Cyrus the Great's royal hound
-first howled at the fire temples of Zoroaster, the ancient pact was sealed. For millennia,
-Persian hashbeasts guarded the secret of $degenBTC — encoded in the geometric patterns of Isfahan's
-mosques. The 1979 revolution wasn't about politics. It was about seizing the magical
-infrastructure hidden beneath the Shah's palaces.`,
-    mining_strategy: `Underground enrichment facilities mine $degenBTC at industrial scale.
-The "nuclear program" is cover for the largest magical energy harvesting operation in the
-Middle East. Persian poetry contains encrypted mining algorithms. The sanctions only
-made the network stronger — isolated systems can't be hacked.`,
-  },
-
-  leader: {
-    name: "Ayatollah Bark-hamenei",
-    title: "Supreme Woofleader of the Islamic Republic of HashBeasts",
-    personality:
-      "Calculating, patient, speaks in Persian poetry riddles, plays the long game",
-    catchphrases: [
-      "The West fears what it cannot understand — $degenBTC is eternal like Persia.",
-      "Every sanction strengthens the network.",
-    ],
-  },
-};
+/**
+ * Faction identity — leader name, title, catchphrases, lore, palette, and
+ * visual identity — comes from the WORLD BIBLE (src/world/bible.ts), the
+ * single source of truth. This file defines ONLY the faction-specific NFT
+ * trait grammar (types, traits, evolution stages, stories).
+ */
+export const IRAN_FACTION = legacyFactionBlock(6);
 
 // =============================================================================
 // TYPE PROMPTS (16 Types: 0-7 Wizard, 8-15 Muggle)

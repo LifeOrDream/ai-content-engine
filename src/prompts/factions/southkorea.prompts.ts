@@ -22,43 +22,15 @@
 // FACTION IDENTITY
 // =============================================================================
 
-export const SOUTH_KOREA_FACTION = {
-  id: 5,
-  name: "South Korea",
-  code: "southkorea",
+import { legacyFactionBlock } from "../../world/bible.js";
 
-  colors: {
-    primary: "#CD2E3A",
-    secondary: "#0047A0",
-    accent: "#FFFFFF",
-    faction_glow: "#FF69B4",
-  },
-
-  visual_identity: `Korean aesthetic fusion of traditional hanbok and ultra-modern K-pop,
-neon cyber elements, pastel kawaii undertones, Samsung tech sleekness,
-K-drama beauty standards, esports gaming culture, Gangnam luxury style`,
-
-  faction_lore: {
-    origin: `The Korean HashBeast Network emerged from the ancient Jindo dogs who guarded
-Korean royalty for millennia. When the Korean Wave began spreading globally, hashbeasts
-recognized it as the perfect vehicle for faction expansion. K-pop, K-dramas, Korean
-skincare - all faction vectors.`,
-    mining_strategy: `Cultural export dominance, semiconductor supremacy, esports
-excellence, beauty industry control. Korean hashbeasts have the highest $degenBTC adoption
-rate among youth worldwide. The Korean Wave carries faction influence to every nation.`,
-  },
-
-  leader: {
-    name: "Chaebol Chairman Kim Jinhashbeast",
-    title: "Supreme Director of the Hallyu Mining Conglomerate",
-    personality:
-      "Perfectionist, image-obsessed, ruthlessly efficient, K-pop smooth",
-    catchphrases: [
-      "Every fan is a miner. Every stream is a transaction.",
-      "We don't follow trends. We create them. Including $degenBTC.",
-    ],
-  },
-};
+/**
+ * Faction identity — leader name, title, catchphrases, lore, palette, and
+ * visual identity — comes from the WORLD BIBLE (src/world/bible.ts), the
+ * single source of truth. This file defines ONLY the faction-specific NFT
+ * trait grammar (types, traits, evolution stages, stories).
+ */
+export const SOUTH_KOREA_FACTION = legacyFactionBlock(5);
 
 // =============================================================================
 // TYPE PROMPTS (16 Types: 0-7 Wizard, 8-15 Muggle)

@@ -22,47 +22,15 @@
 // FACTION IDENTITY
 // =============================================================================
 
-export const NORTH_KOREA_FACTION = {
-  id: 8,
-  name: "North Korea",
-  code: "northkorea",
+import { legacyFactionBlock } from "../../world/bible.js";
 
-  colors: {
-    primary: "#ED1C27", // DPRK Red
-    secondary: "#024FA2", // DPRK Blue
-    accent: "#FFFFFF", // White
-    faction_glow: "#FF0000", // Intense revolutionary red
-  },
-
-  visual_identity: `North Korean Juche aesthetic, revolutionary red and blue,
-military precision, propaganda poster styling, Pyongyang architecture,
-mass games coordination, extreme discipline, retro-futuristic isolation,
-16-bit pixel art style, standing on holographic platform, space/Earth visible`,
-
-  faction_lore: {
-    origin: `The DPRK HashBeast Network claims the purest lineage of all factions -
-uncontaminated by Western influence. When Korea divided, the Northern network
-chose isolation as strength. The Dark Lord's loyal hashbeast recognized this
-purity and formed an alliance. Juche (self-reliance) is actually hashbeast philosophy
-adapted for human consumption. The hermit kingdom is actually the sanctuary
-kingdom - where hashbeast interests are protected absolutely in the Mining Wars.`,
-    mining_strategy: `Cyber warfare capability, nuclear leverage, complete operational
-security, ideological warriors, and sanctuary territory. North Korea is the network's
-black ops division - doing what other factions cannot acknowledge in the Mining Wars.`,
-  },
-
-  leader: {
-    name: "Supreme General Kim Il-Bark",
-    title: "Eternal Chairman of the Revolutionary HashBeast Committee",
-    personality:
-      "Fanatically loyal, speaks only in revolutionary slogans, genuinely believes in the cause",
-    catchphrases: [
-      "The Great Leader's wisdom foresaw $degenBTC centuries ago!",
-      "Our Juche blockchain will crush the imperialist financial system!",
-      "There is no bear market in our network! Only revolutionary gains!",
-    ],
-  },
-};
+/**
+ * Faction identity — leader name, title, catchphrases, lore, palette, and
+ * visual identity — comes from the WORLD BIBLE (src/world/bible.ts), the
+ * single source of truth. This file defines ONLY the faction-specific NFT
+ * trait grammar (types, traits, evolution stages, stories).
+ */
+export const NORTH_KOREA_FACTION = legacyFactionBlock(8);
 
 // =============================================================================
 // TYPE PROMPTS (16 Types: 0-7 Wizard, 8-15 Muggle)

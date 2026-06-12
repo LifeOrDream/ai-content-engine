@@ -22,43 +22,15 @@
 // FACTION IDENTITY
 // =============================================================================
 
-export const CHINA_FACTION = {
-  id: 1,
-  name: "China",
-  code: "china",
+import { legacyFactionBlock } from "../../world/bible.js";
 
-  colors: {
-    primary: "#DE2910", // Chinese Red
-    secondary: "#FFDE00", // Chinese Gold
-    accent: "#000000", // Black
-    faction_glow: "#FF4500", // Dragon fire orange
-  },
-
-  visual_identity: `Chinese imperial and modern fusion aesthetics, red and gold color scheme,
-dragon motifs and cloud patterns, traditional Chinese elements mixed with cyberpunk tech,
-jade accessories, ancient wisdom meets cutting-edge technology`,
-
-  faction_lore: {
-    origin: `The Chinese HashBeast Network predates all others, tracing lineage to the celestial
-dogs who guarded the Jade Emperor's throne. When humans built the Great Wall, hashbeasts built
-an underground network spanning the entire Middle Kingdom.`,
-    mining_strategy: `Manufacturing dominance, rare earth control, population scale,
-ancient network infrastructure, technological espionage capabilities. The China faction
-provides most of the physical infrastructure for the $degenBTC network.`,
-  },
-
-  leader: {
-    name: "Grand Master Long Wei",
-    title: "Supreme Dragon of the Eastern Network",
-    personality:
-      "Patient, calculating, speaks in riddles, plays the long game measured in centuries",
-    catchphrases: [
-      "The patient hashbeast catches the eternal mouse.",
-      "While others count in years, we count in dynasties.",
-      "Harmony under heaven, $degenBTC in every wallet.",
-    ],
-  },
-};
+/**
+ * Faction identity — leader name, title, catchphrases, lore, palette, and
+ * visual identity — comes from the WORLD BIBLE (src/world/bible.ts), the
+ * single source of truth. This file defines ONLY the faction-specific NFT
+ * trait grammar (types, traits, evolution stages, stories).
+ */
+export const CHINA_FACTION = legacyFactionBlock(1);
 
 // =============================================================================
 // TYPE PROMPTS (16 Types: 0-7 Wizard, 8-15 Muggle)

@@ -22,44 +22,15 @@
 // FACTION IDENTITY
 // =============================================================================
 
-export const INDIA_FACTION = {
-  id: 3,
-  name: "India",
-  code: "india",
+import { legacyFactionBlock } from "../../world/bible.js";
 
-  colors: {
-    primary: "#FF9933", // India Saffron
-    secondary: "#138808", // India Green
-    accent: "#000080", // Navy Blue (Ashoka Chakra)
-    faction_glow: "#FFD700", // Gold (spiritual enlightenment)
-  },
-
-  visual_identity: `Indian cultural fusion of ancient and modern, saffron and gold tones,
-mandala patterns, spiritual symbols, Bollywood glamour mixed with tech startup vibes,
-Hindi-English fusion, chai culture, cricket references, monsoon aesthetics`,
-
-  faction_lore: {
-    origin: `The Indian HashBeast Network is the oldest in existence - the Vedas speak of divine
-dogs who guarded the path to the afterlife. When Voldemort's loyal hashbeast created $degenBTC,
-the Indian network recognized it immediately: digital dharma. The mathematical patterns
-in blockchain are identical to ancient mantras.`,
-    mining_strategy: `Technological workforce, spiritual authority, population scale,
-Bollywood influence, diaspora network. India runs the largest $degenBTC development
-and maintenance operation - most blockchain code has been touched by Indian paws.`,
-  },
-
-  leader: {
-    name: "Guru Bhairava",
-    title: "Enlightened One of the Subcontinent",
-    personality:
-      "Serene yet intense, speaks in koans and code, sees past and future simultaneously",
-    catchphrases: [
-      "The blockchain is maya - illusion - yet through illusion we find truth.",
-      "In $degenBTC, all karma is resolved. All dharma is fulfilled.",
-      "Be the hash function you wish to see in the world.",
-    ],
-  },
-};
+/**
+ * Faction identity — leader name, title, catchphrases, lore, palette, and
+ * visual identity — comes from the WORLD BIBLE (src/world/bible.ts), the
+ * single source of truth. This file defines ONLY the faction-specific NFT
+ * trait grammar (types, traits, evolution stages, stories).
+ */
+export const INDIA_FACTION = legacyFactionBlock(3);
 
 // =============================================================================
 // TYPE PROMPTS (16 Types: 0-7 Wizard, 8-15 Muggle)

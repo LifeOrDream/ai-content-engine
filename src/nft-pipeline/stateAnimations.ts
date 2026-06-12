@@ -25,7 +25,8 @@ import {
 } from "../utils/falMedia.js";
 import { stripToTransparentApng } from "../utils/animationAssembly.js";
 import { logger } from "../utils/logger.js";
-import { FACTION_REGISTRY, resolveHashBeastTraits } from "../prompts/index.js";
+import { resolveHashBeastTraits } from "../prompts/index.js";
+import { countryBible, MINING_TOOL_BY_CODE } from "../world/bible.js";
 import { decodeDNA } from "./dna.js";
 import type { NftBeastInput } from "./types.js";
 import {
@@ -55,21 +56,11 @@ export const STATE_ACTION: Record<StateLoop, string> = {
   lose: "REELING FROM A LOSS — slumping, shoulders down, deflated and dejected, a sad defeated reaction",
 };
 
-/** Per-faction muggle mining tool so it's not the same pickaxe everywhere. */
-export const MINING_TOOL: Record<string, string> = {
-  usa: "a star-spangled power-drill",
-  china: "a jade-handled pickaxe",
-  japan: "a katana-forged pick",
-  southkorea: "a hi-tech laser-drill",
-  india: "a gilded chakra-pick",
-  russia: "a heavy iron sledge-pick",
-  iran: "an ornate scimitar-pick",
-  northkorea: "a stamped state-issue pickaxe",
-  uk: "a polished gentleman's pick",
-  france: "an artisan engraved pick",
-  brazil: "a carnival-painted pickaxe",
-  israel: "a precision tech-pick",
-};
+/**
+ * Per-faction muggle mining tool so it's not the same pickaxe everywhere.
+ * Single-sourced from the world bible (re-exported for backward compat).
+ */
+export const MINING_TOOL: Record<string, string> = MINING_TOOL_BY_CODE;
 
 // Power-move flavor by mutated trait index (Attack, Defense, Speed, Magic, Luck …).
 const POWER_MOVES = [
@@ -100,7 +91,7 @@ export interface BeastProfile {
 /** Resolve country + wizard/muggle flavor from DNA (best-effort). */
 export function resolveBeastProfile(beast: NftBeastInput): BeastProfile {
   const fid = beast.factionId ?? 0;
-  const reg = FACTION_REGISTRY[fid]?.faction;
+  const country = countryBible(fid);
   let isWizard = String(beast.storagePath || "").includes("/wand"); // heuristic fallback
   let occupation = "";
   try {
@@ -122,8 +113,8 @@ export function resolveBeastProfile(beast: NftBeastInput): BeastProfile {
   return {
     isWizard,
     occupation,
-    factionName: reg?.name || `Faction ${fid}`,
-    factionCode: reg?.code?.toLowerCase() || "usa",
+    factionName: country?.country || `Faction ${fid}`,
+    factionCode: country?.code || "usa",
   };
 }
 

@@ -34,8 +34,8 @@ import {
   buildHashBeastPrompt,
   getCategoryName,
   resolveHashBeastTraits,
-  FACTION_REGISTRY,
 } from "../prompts/index.js";
+import { countryBible, FACTION_CINEMATIC_ENVIRONMENTS } from "../world/bible.js";
 import { decodeDNA } from "./dna.js";
 import { compareImageWithReference, type ValidationResult } from "./identity.js";
 import {
@@ -162,9 +162,7 @@ export function getStoragePath(
   regionValue: number,
   mint: string,
 ): MintStoragePath {
-  const factionRegistry = FACTION_REGISTRY[factionId];
-  const factionName =
-    factionRegistry?.faction.code.toLowerCase() || `faction_${factionId}`;
+  const factionName = countryBible(factionId)?.code || `faction_${factionId}`;
   const categoryName = getCategoryName(factionId, categoryValue)
     .toLowerCase()
     .replace(/[^a-z0-9]/g, "_")
@@ -235,20 +233,8 @@ REQUIREMENTS:
 
 const CINEMATIC_STYLE_PREFIX = `Semi-realistic 3D rendered character portrait, Pixar and DreamWorks animation quality, cinematic movie still aesthetic. The character is an anthropomorphic bipedal hashbeast (dog) with detailed realistic fur textures, expressive eyes with light reflections, and physically-based material rendering on all clothing and accessories. Dramatic cinematic lighting with rim lights and volumetric atmosphere. Shallow depth of field with bokeh background. Professional composition suitable for a movie poster or game cinematic cutscene. The character should feel like it belongs in a high-budget animated film — NOT pixel art, NOT cartoon, NOT flat illustration. Think Zootopia meets military thriller.`;
 
-const FACTION_CINEMATIC_ENVIRONMENTS: Record<number, { bg: string; colors: string }> = {
-  0: { bg: "Inside a high-tech Pentagon command center with holographic displays, American flags, warm golden lighting through tall windows, oak conference table", colors: "Red, white, blue accents. Gold trim. Warm amber lighting." },
-  1: { bg: "Inside an imperial palace hall with red silk curtains, golden dragon motifs, jade ornaments, dramatic red and gold lantern lighting", colors: "Deep red and gold. Jade green accents." },
-  2: { bg: "Inside a Kremlin war room with dark wood paneling, military maps on walls, snow visible through frosted windows, cold blue lighting mixed with warm lamp light", colors: "Deep blue, white, red. Cold tones." },
-  3: { bg: "Inside an ornate Rajasthani palace with intricate marble carvings, colorful stained glass, marigold garlands, warm golden temple lighting", colors: "Saffron orange, white, green. Rich gold." },
-  4: { bg: "Inside a traditional Japanese castle with sliding shoji screens, katana display wall, cherry blossom branches, soft diffused paper lantern lighting", colors: "White, red. Cherry pink accents." },
-  5: { bg: "Inside an ultra-modern Seoul tech headquarters with curved glass walls, LED accent strips, clean white and cyan lighting", colors: "Cyan, white, sleek modern neon." },
-  6: { bg: "Inside a grand Persian palace with geometric tilework, arched doorways, ornate carpets, moody golden light filtering through lattice screens", colors: "Green, gold, white. Persian blue tile accents." },
-  7: { bg: "Inside a classic British parliament chamber with dark wood, green leather benches, gothic arched windows, warm candlelight mixed with grey London light", colors: "Navy blue, red, gold. Dark wood." },
-  8: { bg: "Inside a stark propaganda-decorated bunker with military medals display case, harsh fluorescent mixed with dramatic spotlight", colors: "Dark red, military green, gold stars." },
-  9: { bg: "Inside a lavish Versailles-style salon with gilded mirrors, crystal chandeliers, rococo ceiling, warm romantic Parisian golden light", colors: "Blue, white, red. Gold gilding." },
-  10: { bg: "Inside a futuristic skyscraper penthouse with floor-to-ceiling glass, sunset visible, gold and marble finishes", colors: "Gold, green, white. Luxury." },
-  11: { bg: "Inside a high-security intelligence operations center with multiple screens, Jerusalem stone walls visible, cool blue-white tech lighting", colors: "Blue, white. Tech aesthetic." },
-};
+// Cinematic-portrait environments are single-sourced from the world bible
+// (rung 3 of the style elevation ladder): FACTION_CINEMATIC_ENVIRONMENTS.
 
 /**
  * Cinematic PFP portrait prompt (optional asset; production currently ships

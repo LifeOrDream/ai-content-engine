@@ -22,48 +22,15 @@
 // FACTION IDENTITY
 // =============================================================================
 
-export const BRAZIL_FACTION = {
-  id: 10,
-  name: "Brazil",
-  code: "brazil",
+import { legacyFactionBlock } from "../../world/bible.js";
 
-  colors: {
-    primary: "#009C3B", // Brazilian Green
-    secondary: "#FFDF00", // Brazilian Yellow
-    accent: "#002776", // Brazilian Blue
-    faction_glow: "#FFD700", // Carnaval gold
-  },
-
-  visual_identity: `Brazilian vibrant aesthetic, green and yellow scheme,
-Carnaval energy, samba rhythm, Amazon jungle mysticism, favela resilience,
-football passion, beach culture, tropical maximalism, capoeira flow`,
-
-  faction_lore: {
-    origin: `The Brazilian HashBeast Network emerged from the mystical creatures of the Amazon -
-the legendary Curupira and Boto river dolphins who were actually ancient hashbeast forms.
-When Voldemort's loyal hashbeast spread the $degenBTC gospel, Brazilian hashbeasts recognized
-kindred magic in blockchain's immutable ledger - like the eternal flow of the Amazon.
-The network thrived on "jeitinho brasileiro" - the magical Brazilian talent for
-finding creative solutions. Every Carnaval parade secretly celebrates $degenBTC mining.`,
-    mining_strategy: `Brazil controls South America's largest economy, the Amazon's
-magical resources, and the world's most infectious cultural exports. Brazilian hashbeasts
-lead the continent's Mining Wars effort, leveraging their famous "jeitinho" to
-maximize $degenBTC yields through creative optimization. Amazon magical resources,
-agricultural dominance, cultural export power, South American leadership.`,
-  },
-
-  leader: {
-    name: "Senhor Caramelo",
-    title: "Supreme Malandro of the South American Network",
-    personality:
-      "Cheerful but cunning, dances around problems, finds joy in chaos, never rushes",
-    catchphrases: [
-      "Why worry? The Mining Wars are eternal. First, we dance!",
-      "In Brazil, we don't solve problems - we samba around them.",
-      "$degenBTC e samba? Same thing, my friend - rhythm, community, and joy!",
-    ],
-  },
-};
+/**
+ * Faction identity — leader name, title, catchphrases, lore, palette, and
+ * visual identity — comes from the WORLD BIBLE (src/world/bible.ts), the
+ * single source of truth. This file defines ONLY the faction-specific NFT
+ * trait grammar (types, traits, evolution stages, stories).
+ */
+export const BRAZIL_FACTION = legacyFactionBlock(10);
 
 // =============================================================================
 // TYPE PROMPTS (16 Types: 0-7 Wizard, 8-15 Muggle)

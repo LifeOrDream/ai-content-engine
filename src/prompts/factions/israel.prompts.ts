@@ -13,47 +13,15 @@
 // FACTION IDENTITY
 // =============================================================================
 
-export const ISRAEL_FACTION = {
-  id: 11,
-  name: "Israel",
-  code: "israel",
+import { legacyFactionBlock } from "../../world/bible.js";
 
-  colors: {
-    primary: "#0038B8",
-    secondary: "#FFFFFF",
-    accent: "#0038B8",
-    faction_glow: "#FFD700",
-  },
-
-  visual_identity: `Israeli tech-military aesthetic, Star of David motifs, Bauhaus Tel Aviv,
-ancient Jerusalem stone, startup culture meets ancient civilization, Iron Dome streaks,
-Negev desert tech installations, Mediterranean coast, kibbutz agriculture meets AI`,
-
-  faction_lore: {
-    origin: `When King Solomon built the Temple, the architects embedded mining algorithms
-into the foundation stones. For 3,000 years, the Western Wall has been silently
-computing. The Dead Sea Scrolls aren't religious texts — they're the original $degenBTC
-whitepaper. Modern Israel was founded in 1948 partly to reclaim the mining infrastructure.
-Unit 8200 was created to protect it. The Startup Nation isn't building apps — it's
-building the tools to decode Solomon's blockchain.`,
-    mining_strategy: `Military-grade cybersecurity protects the network. Unit 8200 alumni
-build the mining tools. Iron Dome intercepts attacks on mining infrastructure. The
-Negev desert hosts solar-powered mining farms. Tel Aviv's 7,000 startups are all
-optimising $degenBTC operations. When you're surrounded by enemies, you build the
-best defences — digital and physical.`,
-  },
-
-  leader: {
-    name: "General Barkowitz",
-    title: "Director of the $degenBTC Defence Forces (DDF)",
-    personality:
-      "Hyper-competent, no-nonsense, innovates under pressure, never forgets",
-    catchphrases: [
-      "We don't have oil, we don't have size — we have brains. $degenBTC runs on brains.",
-      "The best defence is a good algorithm.",
-    ],
-  },
-};
+/**
+ * Faction identity — leader name, title, catchphrases, lore, palette, and
+ * visual identity — comes from the WORLD BIBLE (src/world/bible.ts), the
+ * single source of truth. This file defines ONLY the faction-specific NFT
+ * trait grammar (types, traits, evolution stages, stories).
+ */
+export const ISRAEL_FACTION = legacyFactionBlock(11);
 
 // =============================================================================
 // TYPE PROMPTS (16 Types: 0-7 Wizard, 8-15 Muggle)

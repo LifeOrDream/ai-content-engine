@@ -15,6 +15,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { generateImageEditFromBuffers, designVoice, fetchAsBuffer } from "../../src/utils/falMedia.js";
 import { HASHBEAST_REFERENCE_STYLE, PROGRESSION_AND_POWER_CANON } from "../style/visualBible.js";
+import { CAST_CANON } from "../../src/world/bible.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CAST_DIR = path.resolve(__dirname, "..", "cast");
@@ -43,17 +44,17 @@ export interface CharacterDef {
 const STYLE = `${HASHBEAST_REFERENCE_STYLE} Full-body locked character reference, clean plain background, highly consistent design, game-card readable silhouette.`;
 const referencePath = (...parts: string[]) => path.resolve(__dirname, "..", "reference", ...parts);
 
-export const CAST: CharacterDef[] = [
-  {
-    id: "rex", aliases: ["rex", "goldpaw", "rex goldpaw", "rex sterling"],
-    design: [
-      "Rex 'Goldpaw' Sterling — a canonical USA Golden Retriever HashBeast, evolved into the charismatic trailer host/commander. Medium-large golden retriever build, broad friendly head, floppy ears, golden fur, star-spangled cap/scarf lineage, red-and-gold cape/armor hero silhouette, bubblegum swagger, bold pixel-DNA outlines, bright patriotic arcade palette.",
-      "Use the downloaded USA logo doge as an identity/social-DP anchor, but keep the body language in the USA breed canon. Preserve the hat/cap silhouette, golden-orange face, wide eyes, playful confident mouth shape, star-spangled clothing language, red cape/armor lineage, and collectible social-DP readability.",
-      "For show scenes, evolve Rex into a premium animated HashBeast without changing identity or breed. Do not turn him into a black corgi, pinstripe banker dog, realistic animal, anime boy, generic shiba, or generic 3D mascot.",
-      STYLE,
-    ].join(" "),
-    voiceDesign: "Lively animated cartoon-dog character voice — a charismatic, slightly stylized hype-man with brash American salesman swagger, expressive and a touch comedic, like a fast-talking animated-movie sidekick. Not a flat human announcer.",
-    language: "English", defaultEmotion: "confident", styleSeedUrl: SEED(0, "golden_retriever_run1_dp.png"),
+/**
+ * Render-only config per cast id (style seeds + locked local reference art +
+ * extra render guidance). Identity itself — name, breed, look, gear, voice —
+ * comes from the world bible (src/world/bible.ts). Edit identity there.
+ */
+const RENDER_CONFIG: Record<
+  string,
+  { styleSeedUrl: string; localReferencePaths?: string[]; designNotes?: string[] }
+> = {
+  rex: {
+    styleSeedUrl: SEED(0, "golden_retriever_run1_dp.png"),
     localReferencePaths: [
       referencePath("usa-logo", "minebtc-usa-hashbeast-logo.png"),
       referencePath("usa-wand-tech", "dp.png"),
@@ -61,38 +62,37 @@ export const CAST: CharacterDef[] = [
       referencePath("usa-wand-tech", "winning.png"),
       referencePath("usa-wand-tech", "mining.png"),
     ],
+    designNotes: [
+      "Use the downloaded USA logo doge as an identity/social-DP anchor, but keep the body language in the USA breed canon. Preserve the hat/cap silhouette, golden-orange face, wide eyes, playful confident mouth shape, star-spangled clothing language, red cape/armor lineage, and collectible social-DP readability.",
+      "For show scenes, evolve Rex into a premium animated HashBeast without changing identity or breed. Do not turn him into a black corgi, pinstripe banker dog, realistic animal, anime boy, generic shiba, or generic 3D mascot.",
+    ],
   },
-  {
-    id: "long", aliases: ["long", "master long"],
-    design: "Master Long — a canonical China Chow Chow imperial wuxia mage. Compact lion-like Chow Chow silhouette, massive fluffy mane, deep-set calm eyes, flowing imperial robes, jade pickaxe-staff, serene controlled posture, patient power. " + STYLE,
-    voiceDesign: "Stylized animated cartoon-dog character voice — calm imperial gravitas, slow and weighted, dry wit, Mandarin-accented English, the unhurried patience of someone who has already won. Characterful, not a flat human announcer.",
-    language: "English", defaultEmotion: "calm", styleSeedUrl: SEED(1, "chow_chow_run1_dp.png"),
-  },
-  {
-    id: "volkov", aliases: ["volkov"],
-    design: "Volkov — a canonical Russia Siberian Husky war-mage. Medium compact wolf-like husky build, thick double coat, facial mask markings, erect ears, icy eyes, heavy military greatcoat, frost pressure aura, cold unblinking stare, statue-still menace. " + STYLE,
-    voiceDesign: "Stylized animated cartoon-dog character voice — deep gravelly Russian-accented English, menacing but characterful, minimal words, threats as flat statements of fact, long pauses. Not a flat human announcer.",
-    language: "English", defaultEmotion: "cold", styleSeedUrl: SEED(2, "siberian_husky_run1_dp.png"),
-  },
-  {
-    id: "marshal", aliases: ["marshal", "marshal bonepaw", "bonepaw"],
-    design: "Marshal Bonepaw — a canonical North Korea Dark Pungsan Juche Sorcerer. Powerful mountain-dog silhouette, pale/dark Pungsan lineage, over-decorated military uniform heavy with medals, stamped state pickaxe, chest puffed out, manic grandiose expression. " + STYLE,
-    voiceDesign: "Stylized animated cartoon-dog character voice — grandiose comic-villain state-propaganda bombast, Korean-accented English, maximum volume and superlatives, gleefully over-the-top like an animated-movie antagonist. Not a flat human announcer.",
-    language: "English", defaultEmotion: "bombastic", styleSeedUrl: SEED(8, "dark_pungsan_run1_dp.png"),
-  },
-  {
-    id: "raja", aliases: ["raja"],
-    design: "Raja — a canonical India Rajapalayam HashBeast, the underdog. Tall powerful white sighthound build, deep chest, long athletic legs, noble face, cricket gear slung like armor, gilded chakra-pickaxe, wide confident grin with a flicker of nerves underneath. " + STYLE,
-    voiceDesign: "Stylized animated cartoon-dog character voice — fast, clever, warm Indian-accented English, Bollywood-bright playful energy, an underdog with heart, like a lovable animated-movie hero. Not a flat human announcer.",
-    language: "English", defaultEmotion: "playful", styleSeedUrl: SEED(3, "rajapalayam_run1_dp.png"),
-  },
-  {
-    id: "pip", aliases: ["pip"],
-    design: "Pip — a canonical USA Australian Shepherd stage-1 HashBeast pup, soft and innocent, merle/tri-color markings, oversized eyes, feathered coat, bob-tail lineage, a little uncertain. " + STYLE,
-    voiceDesign: "Stylized animated cartoon-puppy character voice — small, sincere, young, halting and gentle, wide-eyed innocence, like a tender animated-movie kid character. Not a flat human announcer.",
-    language: "English", defaultEmotion: "vulnerable", styleSeedUrl: SEED(0, "australian_shepherd_run1_dp.png"),
-  },
-];
+  long: { styleSeedUrl: SEED(1, "chow_chow_run1_dp.png") },
+  volkov: { styleSeedUrl: SEED(2, "siberian_husky_run1_dp.png") },
+  marshal: { styleSeedUrl: SEED(8, "dark_pungsan_run1_dp.png") },
+  raja: { styleSeedUrl: SEED(3, "rajapalayam_run1_dp.png") },
+  pip: { styleSeedUrl: SEED(0, "australian_shepherd_run1_dp.png") },
+};
+
+export const CAST: CharacterDef[] = CAST_CANON.map((c) => {
+  const render = RENDER_CONFIG[c.id] || RENDER_CONFIG.rex;
+  return {
+    id: c.id,
+    aliases: [...c.aliases],
+    design: [
+      `${c.name} — a canonical ${c.country} ${c.breed} HashBeast.`,
+      c.look,
+      `Signature gear: ${c.gear}`,
+      ...(render.designNotes || []),
+      STYLE,
+    ].join(" "),
+    voiceDesign: c.voiceDesign,
+    language: c.language,
+    defaultEmotion: c.defaultEmotion,
+    styleSeedUrl: render.styleSeedUrl,
+    localReferencePaths: render.localReferencePaths,
+  };
+});
 
 export function resolveCharacter(name: string): CharacterDef | null {
   const n = String(name || "").trim().toLowerCase();
