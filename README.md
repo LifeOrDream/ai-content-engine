@@ -262,6 +262,12 @@ cp .env.example .env
 
 Never commit `.env`, generated videos, provider keys, Telegram tokens, AWS keys, or private production outputs.
 
+## Work With Me
+
+I build **Solana & AI products end-to-end** — AI content pipelines like this one, on-chain programs, full-stack dApps, and real-time game systems.
+
+**Available for freelance / contract work.** Want your Solana or AI project built? Reach out on Telegram — **[@Sunshine_Rider](https://t.me/Sunshine_Rider)**.
+
 ## License
 
 MIT. See [LICENSE](LICENSE).
