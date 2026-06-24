@@ -19,7 +19,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFileP, tmpDir, rmDir, probeDuration } from "./ffmpeg.js";
-import { fetchAsBuffer, generateMusic } from "../../src/utils/falMedia.js";
+import { fetchAsBuffer, generateMusic, falKeyStore } from "../../src/utils/falMedia.js";
 import type { Screenplay } from "../pipeline/types.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -28,6 +28,11 @@ const PYTHON = process.env.HASHBEAST_ANIM_PYTHON || "python3";
 const TRACK_MODEL = process.env.TRAILER_TRACK_MODEL || "fal-ai/ace-step";
 const FAL_KEY = process.env.FAL_API_KEY || "";
 const FALLBACK_BPM = Math.max(60, Number(process.env.TRAILER_TRACK_BPM || 120));
+
+/** Per-run override (falKeyStore) wins over the module env key. */
+function activeFalKey(): string {
+  return falKeyStore.getStore()?.key || FAL_KEY;
+}
 
 export interface MusicTrack {
   buffer: Buffer;
@@ -59,7 +64,7 @@ function styleTags(screenplay: Screenplay): string {
 
 /** Run a fal queue model with a raw payload (track models differ in schema). */
 async function falQueueRun(model: string, payload: Record<string, unknown>, timeoutMs = 300_000): Promise<any> {
-  const headers = { Authorization: `Key ${FAL_KEY}`, "Content-Type": "application/json" };
+  const headers = { Authorization: `Key ${activeFalKey()}`, "Content-Type": "application/json" };
   const submit = await fetch(`https://queue.fal.run/${model}`, { method: "POST", headers, body: JSON.stringify(payload) });
   if (!submit.ok) throw new Error(`fal ${model} submit ${submit.status}: ${(await submit.text()).slice(0, 200)}`);
   const job = (await submit.json()) as { status_url?: string; response_url?: string };
@@ -100,7 +105,7 @@ export async function resolveTrack(screenplay: Screenplay, targetSeconds: number
   const lyrics = extractLyrics(screenplay);
   const seconds = Math.min(180, Math.max(15, Math.round(targetSeconds + 4)));
 
-  if (FAL_KEY) {
+  if (activeFalKey()) {
     try {
       // ace-step style payload (tags + lyric sheet); generic models ignore extras.
       const payload = /ace-step/.test(TRACK_MODEL)

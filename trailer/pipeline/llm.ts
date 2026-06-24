@@ -23,6 +23,7 @@ import {
   assertUsefulLLMText,
   parseJsonLoose as parseJsonLooseShared,
 } from "../../src/content-engine/llmText.js";
+import { falKeyStore } from "../../src/utils/falMedia.js";
 
 const FAL_KEY = process.env.FAL_API_KEY || "";
 const GEMINI_KEY = process.env.GEMINI_KEY || "";
@@ -53,8 +54,10 @@ export async function callLLM(prompt: string, opts: { temperature?: number; json
 // ── fal.ai openrouter/router (queue API: submit → poll → result) ────────────
 
 async function callFal(prompt: string, opts: { temperature?: number; json?: boolean }): Promise<string> {
-  if (!FAL_KEY) throw new Error("FAL_API_KEY not set — required for TRAILER_LLM_PROVIDER=fal");
-  const headers = { Authorization: `Key ${FAL_KEY}`, "Content-Type": "application/json" };
+  // Per-run override (falKeyStore) wins over the module env key.
+  const apiKey = falKeyStore.getStore()?.key || FAL_KEY;
+  if (!apiKey) throw new Error("FAL_API_KEY not set — required for TRAILER_LLM_PROVIDER=fal");
+  const headers = { Authorization: `Key ${apiKey}`, "Content-Type": "application/json" };
 
   const submit = await fetch(`https://queue.fal.run/${FAL_LLM_ENDPOINT}`, {
     method: "POST",

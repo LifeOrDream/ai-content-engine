@@ -32,15 +32,17 @@ import {
   generateLootboxRevealRitual,
 } from "../nft-pipeline/ritual.js";
 import { generateAudioIdentityCue } from "../world/audioIdentity.js";
-import {
-  buildChapterAnatomyFallback,
-  buildChapterWriterPrompt,
-  lintChapterAnatomy,
-  mergeChapterDraft,
-  type ChapterAnatomy,
-  type ChapterCycleFacts,
-} from "../content-engine/chapterWriter.js";
+import path from "node:path";
+import { produceChapterVideo, writeChapterAnatomy } from "./chapterVideo.js";
+import { produceReel } from "./reel.js";
 import { canonizeChapter } from "../../trailer/world/storyMemory.js";
+import {
+  archiveChapterSource,
+  gitShortSha,
+  newVersionDir,
+  writeReplayManifest,
+} from "../../trailer/world/chapterArchive.js";
+import { falKeyStore } from "../utils/falMedia.js";
 
 export interface ProcessJobOptions {
   /**
@@ -49,45 +51,6 @@ export interface ProcessJobOptions {
    * `full_body` progress to their own socket events).
    */
   onProgress?: NftProgressFn;
-}
-
-/**
- * Writers-room-lite for a Hashiden chapter: one LLM call for the front-matter
- * (title / recap beats / cliffhanger) + the deterministic banned-lexicon lint
- * with ONE feedback retry; cover prompt + cast + ledger stay canon-built. Any
- * failure falls back to the deterministic anatomy — the chapter always ships.
- */
-async function writeChapterAnatomy(facts: ChapterCycleFacts): Promise<ChapterAnatomy> {
-  if (process.env.CHAPTER_WRITER_DISABLE_LLM === "true") {
-    return buildChapterAnatomyFallback(facts);
-  }
-  const prompt = buildChapterWriterPrompt(facts);
-  const attemptOnce = async (feedback?: string): Promise<ChapterAnatomy | null> => {
-    const raw = await generateText(feedback ? `${prompt}\n\n${feedback}` : prompt, {
-      temperature: 0.85,
-      json: true,
-    });
-    return mergeChapterDraft(facts, parseJsonLoose<any>(raw));
-  };
-  try {
-    let anatomy = await attemptOnce();
-    let flags = anatomy ? lintChapterAnatomy(anatomy) : ["structurally invalid draft"];
-    if (flags.length > 0) {
-      const feedback =
-        `REVISION PASS — your previous draft failed the lexicon lint. Fix EVERY flag below (keep the structure, repair only the flagged text):\n` +
-        flags.slice(0, 10).map((f) => `- ${f}`).join("\n");
-      const second = await attemptOnce(feedback);
-      const secondFlags = second ? lintChapterAnatomy(second) : ["structurally invalid draft"];
-      if (secondFlags.length === 0) {
-        anatomy = second;
-        flags = secondFlags;
-      }
-    }
-    if (anatomy && flags.length === 0) return anatomy;
-  } catch {
-    /* fall through to the deterministic chapter */
-  }
-  return buildChapterAnatomyFallback(facts);
 }
 
 function parseSceneScript(rawText: string): WriteSceneScriptResult | null {
@@ -241,6 +204,34 @@ export async function processContentEngineJob<K extends ContentEngineJobKind>(
       const entry = memory.videos.find((v) => v.id === `chapter-${input.chapter.warId}`);
       return { ok: true, videoNo: entry?.videoNo ?? memory.currentVideoNo } as ContentEngineJobResultMap[K];
     }
+    case "chapter.produce": {
+      const input = payload.input as ContentEngineJobPayload<"chapter.produce">["input"];
+      const gitSha = gitShortSha();
+      archiveChapterSource(input.facts.warId, { facts: input.facts, gitSha });
+      const { version, dir } = newVersionDir(input.facts.warId, gitSha);
+      const run = () => produceChapterVideo(input.facts, dir, { scriptOnly: input.scriptOnly });
+      // A per-job apiKey overrides the worker's env key for EVERY fal call in this
+      // production (media + LLM + music) via the AsyncLocalStorage seam.
+      const res = input.apiKey ? await falKeyStore.run({ key: input.apiKey }, run) : await run();
+      writeReplayManifest(dir, {
+        warId: input.facts.warId,
+        version,
+        gitSha,
+        mode: "produce",
+        keySource: input.apiKey ? "user" : "env",
+        costUsd: res.costUsd,
+        videoPath: res.videoPath ? path.relative(dir, res.videoPath) : null,
+        createdAt: new Date().toISOString(),
+      });
+      return {
+        warId: input.facts.warId,
+        version,
+        dir,
+        scenesPath: res.scenesPath,
+        videoPath: res.videoPath,
+        costUsd: res.costUsd,
+      } as ContentEngineJobResultMap[K];
+    }
     case "ritual.lootbox_reveal": {
       const input = payload.input as ContentEngineJobPayload<"ritual.lootbox_reveal">["input"];
       return (await generateLootboxRevealRitual(input)) as ContentEngineJobResultMap[K];
@@ -252,6 +243,10 @@ export async function processContentEngineJob<K extends ContentEngineJobKind>(
     case "audio.identity_cue": {
       const input = payload.input as ContentEngineJobPayload<"audio.identity_cue">["input"];
       return (await generateAudioIdentityCue(input.cueId)) as ContentEngineJobResultMap[K];
+    }
+    case "produce_reel": {
+      const input = payload.input as ContentEngineJobPayload<"produce_reel">["input"];
+      return (await produceReel(input)) as ContentEngineJobResultMap[K];
     }
     default:
       throw new Error(`Unknown content-engine job kind: ${(payload as any)?.kind}`);

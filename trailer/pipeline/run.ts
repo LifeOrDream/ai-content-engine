@@ -159,19 +159,25 @@ function lintProduce(parsed: any, screenplay: Screenplay, lockedScript: string) 
   return { errors: [...a.errors, ...b.errors, ...c.errors], warnings: [...a.warnings, ...b.warnings, ...c.warnings] };
 }
 
-async function main() {
-  const idArg = process.argv[2];
-  if (!idArg || idArg.startsWith("--")) {
-    const files = fs.readdirSync(BLUEPRINTS).filter((f) => f.endsWith(".md") && !f.startsWith("00-"));
-    console.log("Usage: npx tsx trailer/pipeline/run.ts <blueprintId> [--from N] [--to N] [--only passId]");
-    console.log("Blueprints:\n  " + files.map((f) => "• " + f.replace(/\.md$/, "")).join("\n  "));
-    console.log("Passes:\n  " + PASSES.map((p, i) => `  ${i + 1}. ${p.id} — ${p.goal}`).join("\n"));
-    return;
-  }
+/** Run options for the script pipeline (the CLI maps --only/--from/--to onto these). */
+export interface ScriptPipelineOpts {
+  from?: number;
+  to?: number;
+  only?: string;
+}
 
-  const bp = resolveBlueprint(idArg);
+/**
+ * Run the script→produce passes for a blueprint into `outDir`, writing
+ * scenes.json. Extracted from the CLI so the chapter→video producer can drive
+ * the exact same passes from an in-memory (synthesized) blueprint. The CLI
+ * `main()` is now a thin wrapper that resolves a blueprint .md and calls this.
+ */
+export async function runScriptPipeline(
+  bp: Blueprint,
+  outDir: string,
+  opts: ScriptPipelineOpts = {},
+): Promise<{ scenesPath: string; llmCalls: number }> {
   const bible = fs.readFileSync(path.join(BLUEPRINTS, "00-series-bible.md"), "utf8");
-  const outDir = path.join(OUT, bp.id);
   fs.mkdirSync(outDir, { recursive: true });
   ensureRunManifest(outDir, bp);
   const showrunnerPacket = buildShowrunnerMemoryPacket({ blueprint: bp });
@@ -179,9 +185,9 @@ async function main() {
   const countryCharacterBlock = buildCountryCastPromptBlock();
   const locationStoryboardBlock = buildLocationPromptBlock();
 
-  const only = arg("--only");
-  const from = only ? PASSES.findIndex((p) => p.id === only) + 1 : Number(arg("--from") || 1);
-  const to = only ? from : Number(arg("--to") || PASSES.length);
+  const only = opts.only;
+  const from = only ? PASSES.findIndex((p) => p.id === only) + 1 : (opts.from ?? 1);
+  const to = only ? from : (opts.to ?? PASSES.length);
   if (only && from === 0) throw new Error(`Unknown pass "${only}". Passes: ${PASSES.map((p) => p.id).join(", ")}`);
 
   console.log(`\n🎬 ${bp.title}`);
@@ -336,10 +342,32 @@ async function main() {
       throw e;
     }
   }
-  console.log(`\n✅ done → trailer/out/${bp.id}/  (${llmCalls} LLM call${llmCalls === 1 ? "" : "s"}; inspect 01-script.md + 02-produce.md; final = scenes.json)\n`);
+  console.log(`\n✅ done → ${outDir}/  (${llmCalls} LLM call${llmCalls === 1 ? "" : "s"}; inspect 01-script.md + 02-produce.md; final = scenes.json)\n`);
+  return { scenesPath: path.join(outDir, "scenes.json"), llmCalls };
 }
 
-main().catch((e) => {
-  console.error("\npipeline failed:", e?.message || e);
-  process.exit(1);
-});
+async function main() {
+  const idArg = process.argv[2];
+  if (!idArg || idArg.startsWith("--")) {
+    const files = fs.readdirSync(BLUEPRINTS).filter((f) => f.endsWith(".md") && !f.startsWith("00-"));
+    console.log("Usage: npx tsx trailer/pipeline/run.ts <blueprintId> [--from N] [--to N] [--only passId]");
+    console.log("Blueprints:\n  " + files.map((f) => "• " + f.replace(/\.md$/, "")).join("\n  "));
+    console.log("Passes:\n  " + PASSES.map((p, i) => `  ${i + 1}. ${p.id} — ${p.goal}`).join("\n"));
+    return;
+  }
+  const bp = resolveBlueprint(idArg);
+  await runScriptPipeline(bp, path.join(OUT, bp.id), {
+    from: arg("--from") ? Number(arg("--from")) : undefined,
+    to: arg("--to") ? Number(arg("--to")) : undefined,
+    only: arg("--only"),
+  });
+}
+
+// Only run the CLI when this file is the entry point — so importing
+// runScriptPipeline (from the chapter→video producer) never triggers a CLI run.
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main().catch((e) => {
+    console.error("\npipeline failed:", e?.message || e);
+    process.exit(1);
+  });
+}

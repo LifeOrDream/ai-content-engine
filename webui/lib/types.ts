@@ -20,7 +20,7 @@ export interface BlueprintDocument extends BlueprintSummary {
 export interface PublicJob {
   id: string;
   blueprintId: string;
-  jobType: "script" | "render";
+  jobType: "script" | "render" | "replay";
   command: string[];
   status: "running" | "success" | "failed" | "killed";
   pid?: number;

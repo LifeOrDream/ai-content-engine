@@ -5,7 +5,7 @@ import { spawn, type ChildProcess } from "node:child_process";
 import { OUT_DIR, PASS_IDS, REPO_ROOT, blueprintById } from "./contentEngine";
 
 export type JobStatus = "running" | "success" | "failed" | "killed";
-export type JobType = "script" | "render";
+export type JobType = "script" | "render" | "replay";
 
 export interface WebJob {
   id: string;
@@ -28,6 +28,8 @@ export interface PublicJob extends Omit<WebJob, "logs"> {
 type Store = {
   jobs: Map<string, WebJob>;
   children: Map<string, ChildProcess>;
+  /** In-memory only (NEVER persisted): per-job secrets to mask out of logs. */
+  redactions: Map<string, string>;
 };
 
 const JOBS_DIR = path.join(OUT_DIR, ".webui-jobs");
@@ -61,6 +63,7 @@ const globalForJobs = globalThis as typeof globalThis & {
 const store: Store = globalForJobs.__minebtcWebuiJobs || {
   jobs: loadPersistedJobs(),
   children: new Map<string, ChildProcess>(),
+  redactions: new Map<string, string>(),
 };
 
 globalForJobs.__minebtcWebuiJobs = store;
@@ -105,21 +108,31 @@ export function getJobWithLogs(id: string): { job: PublicJob; logs: string[] } |
 
 function pushLog(job: WebJob, chunk: Buffer | string): void {
   const text = Buffer.isBuffer(chunk) ? chunk.toString("utf8") : chunk;
+  const secret = store.redactions.get(job.id);
   for (const line of text.split(/\r?\n/)) {
-    if (line.trim()) job.logs.push(line);
+    if (!line.trim()) continue;
+    // Defensive: a user fal key is passed via env (never argv/logged), but mask
+    // it here too so a stray echo can never reach jobs.json on disk.
+    job.logs.push(secret ? line.split(secret).join("***") : line);
   }
   if (job.logs.length > 2500) job.logs.splice(0, job.logs.length - 2500);
   persistJobs();
 }
 
-function startChildJob(job: WebJob, args: string[]): PublicJob {
+function startChildJob(
+  job: WebJob,
+  args: string[],
+  opts: { extraEnv?: Record<string, string>; redact?: string } = {},
+): PublicJob {
   store.jobs.set(job.id, job);
+  // Stash the secret in memory only (never persisted) so pushLog can mask it.
+  if (opts.redact) store.redactions.set(job.id, opts.redact);
   persistJobs();
 
   const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
   const child = spawn(npmCommand, args, {
     cwd: REPO_ROOT,
-    env: process.env,
+    env: opts.extraEnv ? { ...process.env, ...opts.extraEnv } : process.env,
     stdio: ["ignore", "pipe", "pipe"],
   });
   job.pid = child.pid;
@@ -202,6 +215,44 @@ export function startRenderJob(input: {
     startedAt: new Date().toISOString(),
     logs: [],
   }, args);
+}
+
+export function startReplayJob(input: {
+  warId: number;
+  mode: "full" | "render-only";
+  fromVersion?: string;
+  /** Operator's own fal key — passed via child env ONLY, never argv/logs/disk. */
+  apiKey?: string;
+}): PublicJob {
+  const warId = Number(input.warId);
+  if (!Number.isInteger(warId) || warId < 0) throw new Error(`Bad warId: ${input.warId}`);
+  const mode = input.mode === "render-only" ? "render-only" : "full";
+
+  const args = ["run", "chapter:replay", "--", String(warId), "--mode", mode];
+  if (mode === "render-only" && input.fromVersion) {
+    // Version dir names are "<iso-with-dashes>-<gitsha>" — allow that charset only.
+    if (!/^[0-9A-Za-z._-]{1,80}$/.test(input.fromVersion)) throw new Error("Bad version id");
+    args.push("--from", input.fromVersion);
+  }
+
+  const apiKey = String(input.apiKey || "").trim();
+  const extraEnv: Record<string, string> | undefined = apiKey
+    ? { FAL_API_KEY: apiKey, CHAPTER_KEY_SOURCE: "user" }
+    : undefined;
+
+  return startChildJob(
+    {
+      id: `chapter-${warId}-replay-${Date.now().toString(36)}`,
+      blueprintId: `chapter-${warId}`,
+      jobType: "replay",
+      command: ["npm", ...args], // NOTE: key is in env, not here
+      status: "running",
+      startedAt: new Date().toISOString(),
+      logs: [],
+    },
+    args,
+    { extraEnv, redact: apiKey || undefined },
+  );
 }
 
 export function killJob(id: string): PublicJob | null {

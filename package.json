@@ -27,6 +27,8 @@
     "test:grammar": "tsx scripts/test_grammar.ts",
     "check:oss": "npm run typecheck && npm run test:grammar && npm run demo:fixture && npm run demo:chapters && npm run demo:rituals",
     "service:worker": "tsx src/service/worker.ts",
+    "chapter:produce": "tsx scripts/produce_chapter.ts",
+    "chapter:replay": "tsx scripts/replay_chapter.ts",
     "webui": "npm --workspace @lifeordream/ai-content-engine-webui run dev",
     "webui:build": "npm --workspace @lifeordream/ai-content-engine-webui run build",
     "webui:typecheck": "npm --workspace @lifeordream/ai-content-engine-webui run typecheck",

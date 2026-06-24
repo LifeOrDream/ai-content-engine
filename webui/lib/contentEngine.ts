@@ -310,7 +310,9 @@ export function listRuns(activeJobsByBlueprint = new Map<string, string[]>()): R
   if (!fs.existsSync(OUT_DIR)) return [];
   return fs.readdirSync(OUT_DIR)
     .filter((entry) => {
-      if (entry.startsWith(".")) return false;
+      // `chapters/` is the chapter→video corpus (out/chapters/<warId>/<version>/),
+      // surfaced by the dedicated Chapters UI — never list it as a blueprint run.
+      if (entry.startsWith(".") || entry === "chapters") return false;
       const abs = path.join(OUT_DIR, entry);
       return fs.statSync(abs).isDirectory();
     })
